@@ -14,7 +14,7 @@ You'll create specialized AI agents that collaborate to plan comprehensive event
 
 The system demonstrates concurrent workflow execution patterns where agents work in sequence and in parallel, exchange information through the workflow, invoke MCP tools for specialized capabilities, and synthesize comprehensive event plans. You'll also implement **human-in-the-loop** capabilities, allowing user input and approval at critical decision points during agent execution.
 
-![Event Planning Workflow Architecture](https://raw.githubusercontent.com/microsoft/spec-to-agents/main/assets/workflow_architecture.png)
+!IMAGE[Event Planning Agent Design Final 1.png](instructions310255/Event Planning Agent Design Final 1.png)
 
 ---
 
@@ -205,703 +205,1041 @@ You'll use Azure Developer CLI (azd) to provision all necessary Azure resources.
 
 ---
 
-## 5  Understanding Microsoft Agent Framework
+===
 
-Before implementing code, let's understand the Agent Framework architecture.
+## 5. Understanding the Codebase Structure
 
-### Core Concepts
+Before diving into coding, let's understand how the agent-framework code is organized.
 
-**1. Agents**
-```python
-from agent_framework import ChatAgent
+**Open *src/spec-to-agents* folder from root in VS Code Explorer** and examine this structure:
 
-# Create a specialized agent
-agent = client.create_agent(
-    name="VenueSpecialist",
-    instructions="You are an expert in venue selection...",
-    tools=[bing_search, mcp_tool],
-    store=True
-)
+```
+spec-to-agents/
+├── agents/                    # Agent definitions (one per specialist)
+│   ├── venue_specialist.py
+│   ├── budget_analyst.py
+│   ├── catering_coordinator.py
+│   ├── logistics_manager.py
+│   └── event_coordinator.py
+├── prompts/                   # System prompts (agent instructions)
+│   └── [matching agent files]
+├── tools/                     # MCP tools and @ai_functions
+│   ├── bing_search.py
+│   ├── weather.py
+│   └── calendar.py
+├── models/                    # Data models for structured outputs
+│   └── messages.py
+├── workflow/                  # Workflow orchestration logic
+│   ├── core.py               # 🎯 Main workflow builder
+│   └── executors.py          # Custom executor logic
+└── console.py                # CLI entry point for testing
 ```
 
-**2. Workflows**
-```python
-from agent_framework import Workflow, WorkflowBuilder
+> [!knowledge] **Agent Framework Code Organization**
+> 
+> Agent Framework follows a clear separation of concerns:
+> - **`/agents/`**: Agent creation functions that combine prompts + tools
+> - **`/prompts/`**: System instructions defining agent behavior and expertise
+> - **`/tools/`**: Reusable capabilities (web search, weather, calendars)
+> - **`/workflow/`**: Orchestration logic connecting agents with edges
+> - **`/models/`**: Type-safe data structures for agent communication
 
-# Orchestrate multiple agents
-workflow = (
-    WorkflowBuilder(name="Event Planning")
-    .set_start_executor(coordinator)
-    .add_edge(coordinator, venue_specialist)
-    .add_edge(venue_specialist, budget_analyst)
-    .build()
-)
+---
+===
+
+## 6. Exercise 1: Create Your First Agent
+
+**Concept**: In agent-framework, an **agent** is created by combining three elements:
+1. **System instructions** (the "personality" and expertise)
+2. **Tools** (capabilities like web search or code execution)
+3. **Response format** (structured output for predictable responses)
+
+**Locate** the file **`agents/venue_specialist.py`** and find the `# TODO: Exercise 1` comment (around line 10).
+
+**Replace the TODO section with**:
+
+```python
+# TODO: Exercise 1 - Create a Venue Specialist agent with web search capability
+
+def create_agent(client: AzureAIAgentClient, mcp_tool: MCPStdioTool | None) -> ChatAgent:
+    """
+    Create Venue Specialist agent for event planning workflow.
+    
+    This agent uses web search to find and evaluate venue options based on
+    event requirements like capacity, location, and budget.
+    """
+    tools = [web_search]  # Add web search capability
+    
+    if mcp_tool is not None:
+        tools.append(mcp_tool)  # Add sequential thinking for complex reasoning
+    
+    return client.create_agent(
+        name="VenueSpecialist",
+        instructions=venue_specialist.SYSTEM_PROMPT,  # From prompts/venue_specialist.py
+        tools=tools,
+        response_format=SpecialistOutput,  # Ensures structured JSON responses
+        store=True,  # Enable conversation history storage
+    )
 ```
 
-**3. Executors**
-```python
-from agent_framework import AgentExecutor
-
-# Wrap agents for workflow execution
-venue_exec = AgentExecutor(agent=venue_agent, id="venue")
-```
-
-**4. Tools**
-```python
-from agent_framework import ai_function
-
-@ai_function
-async def get_weather_forecast(location: str, days: int = 3) -> str:
-    """Get weather forecast for event planning."""
-    # Implementation
-```
-
-### Key Features
-
-- **Multi-Language Support**: Python and .NET implementations
-- **Enterprise-Ready**: Built on Semantic Kernel's production-proven infrastructure
-- **AutoGen Patterns**: Multi-agent conversation and orchestration patterns
-- **Azure Integration**: Native support for Azure AI services
-- **DevUI**: Real-time visualization of agent interactions
+> [!knowledge] **What You Just Learned**
+> 
+> **Agent Creation Pattern**:
+> - `client.create_agent()` is the factory method for all agents
+> - `name`: Identifies the agent in workflow traces
+> - `instructions`: System prompt defining agent expertise (from `/prompts/`)
+> - `tools`: List of capabilities the agent can invoke
+> - `response_format`: Pydantic model enforcing structured output
+> - `store=True`: Enables **service-managed threads** - Azure automatically maintains conversation history so you don't have to manually track messages
+> 
+> **Key Insight**: The agent doesn't "know" about venues - it gains that knowledge by using the `web_search` tool to research options in real-time.
 
 ---
 
-## 6  Coding Exercises: Build Your Multi-Agent System
+===
 
-Now you'll implement the core functionality of your event planning system. Open **src/spec_to_agents/workflow/core.py** in VS Code.
+## 7. Exercise 2: Implement a Web Search Tool
 
-### Exercise 1: Configure Agent Tools
+**Concept**: Tools in agent-framework are Python functions decorated with `@ai_function`. The LLM can discover and invoke these tools automatically when needed.
 
-**Concept**: Each agent needs specific tools to perform its job. The Venue Specialist needs web search, the Budget Analyst needs code execution for calculations, and the Logistics Manager needs calendar and weather tools.
+!IMAGE[Agent Tools Final.png](instructions310255/Agent Tools Final.png)
 
-**Locate** the `# TODO: Lab Exercise 1` comment in **core.py** (around line 65).
+**Open** **`tools/bing_search.py`** and find the `# TODO: Exercise 2` comment (around line 15).
 
-**Replace** the existing tool configurations with:
-
-```python
-# TODO: Lab Exercise 1 - Configure specialized tools for each agent
-
-# Get MCP sequential thinking tool for advanced reasoning
-mcp_tool = await get_sequential_thinking_tool()
-
-# Create hosted Azure AI tools
-bing_search = HostedWebSearchTool(
-    name="Bing Search",
-    description="Search the web for current information with source citations"
-)
-
-code_interpreter = HostedCodeInterpreterTool(
-    description=(
-        "Execute Python code for financial calculations, budget analysis, "
-        "and data visualization with automatic scratchpad creation"
-    )
-)
-
-# Coordinator: MCP tool for orchestration reasoning
-coordinator_agent = client.create_agent(
-    name="EventCoordinator",
-    instructions=event_coordinator.SYSTEM_PROMPT,
-    tools=[mcp_tool],
-    store=True,
-)
-
-# Venue Specialist: Web search + reasoning + user input
-venue_agent = client.create_agent(
-    name="VenueSpecialist",
-    instructions=venue_specialist.SYSTEM_PROMPT,
-    tools=[bing_search, mcp_tool, request_user_input],
-    store=True,
-)
-
-# Budget Analyst: Code execution + reasoning + user input
-budget_agent = client.create_agent(
-    name="BudgetAnalyst",
-    instructions=budget_analyst.SYSTEM_PROMPT,
-    tools=[code_interpreter, mcp_tool, request_user_input],
-    store=True,
-)
-
-# Catering: Web search + reasoning + user input
-catering_agent = client.create_agent(
-    name="CateringCoordinator",
-    instructions=catering_coordinator.SYSTEM_PROMPT,
-    tools=[bing_search, mcp_tool, request_user_input],
-    store=True,
-)
-
-# Logistics: Calendar + weather + reasoning + user input
-logistics_agent = client.create_agent(
-    name="LogisticsManager",
-    instructions=logistics_manager.SYSTEM_PROMPT,
-    tools=[
-        get_weather_forecast,
-        create_calendar_event,
-        list_calendar_events,
-        delete_calendar_event,
-        mcp_tool,
-        request_user_input,
-    ],
-    store=True,
-)
-```
-
-> [!knowledge] **Why These Tool Combinations?**
-> 
-> - **Venue Specialist**: Needs web search to find venues online and research options
-> - **Budget Analyst**: Requires code execution for complex financial calculations
-> - **Catering Coordinator**: Uses web search for menu research and caterer information
-> - **Logistics Manager**: Needs calendar tools for scheduling and weather for outdoor planning
-> - **All Specialists**: Include MCP sequential-thinking for breaking down complex decisions
-> - **All Specialists**: Include request_user_input for human-in-the-loop approval
-
-### Exercise 2: Build the Workflow with A2A Communication
-
-**Concept**: The WorkflowBuilder defines how agents communicate. Each edge represents a potential A2A communication path. The workflow implements a sequential pattern where output from one agent becomes input to the next.
-
-**Locate** the `# TODO: Lab Exercise 2` comment in **core.py** (around line 130).
-
-**Replace** the workflow building code with:
+**Replace the TODO section with**:
 
 ```python
-# TODO: Lab Exercise 2 - Build workflow with A2A communication edges
+# TODO: Exercise 2 - Implement web search as an @ai_function tool
 
-# Create AgentExecutors (wrappers for workflow integration)
-coordinator_exec = AgentExecutor(agent=coordinator_agent, id="coordinator")
-venue_exec = AgentExecutor(agent=venue_agent, id="venue")
-budget_exec = AgentExecutor(agent=budget_agent, id="budget")
-catering_exec = AgentExecutor(agent=catering_agent, id="catering")
-logistics_exec = AgentExecutor(agent=logistics_agent, id="logistics")
-
-# Create RequestInfoExecutor for human-in-the-loop
-request_info = RequestInfoExecutor(id="user_input")
-
-# Create HITL (Human-In-The-Loop) wrappers
-venue_hitl = HumanInLoopAgentExecutor(agent_id="venue", request_info_id="user_input")
-budget_hitl = HumanInLoopAgentExecutor(agent_id="budget", request_info_id="user_input")
-catering_hitl = HumanInLoopAgentExecutor(agent_id="catering", request_info_id="user_input")
-logistics_hitl = HumanInLoopAgentExecutor(agent_id="logistics", request_info_id="user_input")
-
-# Build workflow with A2A edges
-workflow = (
-    WorkflowBuilder(
-        name="Event Planning Workflow",
-        description=(
-            "Multi-agent event planning workflow with venue selection, budgeting, "
-            "catering, and logistics coordination"
-        ),
-    )
-    # Set entry point
-    .set_start_executor(coordinator_exec)
-    
-    # A2A sequential flow: Coordinator → Venue → Budget → Catering → Logistics → Coordinator
-    .add_edge(coordinator_exec, venue_exec)
-    .add_edge(venue_exec, venue_hitl)
-    .add_edge(venue_hitl, budget_exec)
-    .add_edge(budget_exec, budget_hitl)
-    .add_edge(budget_hitl, catering_exec)
-    .add_edge(catering_exec, catering_hitl)
-    .add_edge(catering_hitl, logistics_exec)
-    .add_edge(logistics_exec, logistics_hitl)
-    .add_edge(logistics_hitl, coordinator_exec)  # Back to coordinator for synthesis
-    
-    # Human-in-the-loop bidirectional edges
-    .add_edge(venue_hitl, request_info)
-    .add_edge(request_info, venue_hitl)
-    .add_edge(budget_hitl, request_info)
-    .add_edge(request_info, budget_hitl)
-    .add_edge(catering_hitl, request_info)
-    .add_edge(request_info, catering_hitl)
-    .add_edge(logistics_hitl, request_info)
-    .add_edge(request_info, logistics_hitl)
-    
-    .build()
-)
-
-# Set stable ID for DevUI
-workflow.id = "event-planning-workflow"
-```
-
-> [!knowledge] **Understanding A2A Communication in This Workflow**
-> 
-> The workflow implements A2A patterns through edges:
-> 
-> 1. **Sequential Delegation**: Coordinator delegates to each specialist in sequence
-> 2. **Context Passing**: Each agent receives the conversation history from previous agents
-> 3. **HITL Integration**: Agents can pause for user input via bidirectional edges with RequestInfoExecutor
-> 4. **Synthesis Loop**: Final edge loops back to Coordinator to synthesize all recommendations
-> 
-> This creates a dynamic conversation flow where agents build on each other's outputs.
-
-### Exercise 3: Implement Custom MCP Tool
-
-**Concept**: MCP tools can be defined as simple Python functions with the `@ai_function` decorator. Let's add a custom tool to enhance the Logistics Manager's capabilities.
-
-**Open** **src/spec_to_agents/tools/weather.py** and locate `# TODO: Lab Exercise 3`.
-
-**Add** this enhanced error handling:
-
-```python
-# TODO: Lab Exercise 3 - Add enhanced error handling for weather tool
-
-@ai_function
-async def get_weather_forecast(
-    location: Annotated[
-        str, Field(description="City name or 'latitude,longitude' (e.g., 'Seattle' or '47.6062,-122.3321')")
-    ],
-    days: Annotated[int, Field(description="Number of forecast days (1-7)", ge=1, le=7)] = 3,
+@ai_function  # This decorator makes the function discoverable by agents
+async def web_search(
+    query: Annotated[str, Field(description="Search query to find information on the web")],
 ) -> str:
-    """Get weather forecast for event planning using Open-Meteo API."""
-    async with httpx.AsyncClient() as client:
-        try:
-            # Geocoding logic
-            if "," in location:
-                try:
-                    lat, lon = map(float, location.split(","))
-                    location_name = f"{lat:.4f}°, {lon:.4f}°"
-                except ValueError:
-                    return "Error: Invalid coordinates format. Use 'latitude,longitude'"
-            else:
-                # Geocode city name
-                geocode_url = "https://geocoding-api.open-meteo.com/v1/search"
-                geocode_params = {"name": location, "count": 1, "language": "en"}
-                geocode_response = await client.get(geocode_url, params=geocode_params)
-                geocode_response.raise_for_status()
-                geocode_data = geocode_response.json()
-
-                if not geocode_data.get("results"):
-                    return f"Error: Location '{location}' not found"
-
-                result = geocode_data["results"][0]
-                lat = result["latitude"]
-                lon = result["longitude"]
-                location_name = f"{result['name']}, {result.get('country', 'Unknown')}"
-
-            # Get forecast
-            weather_url = "https://api.open-meteo.com/v1/forecast"
-            weather_params = {
-                "latitude": lat,
-                "longitude": lon,
-                "daily": "temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max",
-                "timezone": "auto",
-                "forecast_days": days,
-            }
-
-            weather_response = await client.get(weather_url, params=weather_params)
-            weather_response.raise_for_status()
-            weather_data = weather_response.json()
-
-            # Format results (weather codes mapping omitted for brevity)
-            daily = weather_data["daily"]
-            forecasts = []
-            for i in range(len(daily["time"])):
-                date = daily["time"][i]
-                temp_max = daily["temperature_2m_max"][i]
-                temp_min = daily["temperature_2m_min"][i]
-                precip_prob = daily["precipitation_probability_max"][i]
-                
-                forecasts.append(
-                    f"{date}: {temp_min:.1f}°C to {temp_max:.1f}°C, "
-                    f"{precip_prob}% precipitation"
-                )
-
-            return f"Weather forecast for {location_name}:\n" + "\n".join(forecasts)
-
-        except httpx.HTTPStatusError as e:
-            return f"Error fetching weather: {e.response.status_code}"
-        except Exception as e:
-            return f"Error: {str(e)}"
+    """
+    Search the web using Bing Search API and return formatted results.
+    
+    The LLM receives:
+    - Number of results found
+    - Title, snippet, and URL for each result
+    - Formatted for easy parsing and citation
+    """
+    try:
+        # Create temporary agent with Bing tool for the search
+        web_search_tool = HostedWebSearchTool(
+            description="Search the web for current information using Bing"
+        )
+        
+        async with create_agent_client() as client:
+            agent = client.create_agent(
+                name="BingWebSearchAgent",
+                tools=[web_search_tool],
+                system_message="You are a web search agent using Bing.",
+                tool_choice=ToolMode.REQUIRED(function_name="web_search"),
+                store=True,
+                model_id=os.getenv("WEB_SEARCH_MODEL", "gpt-4o-mini"),
+            )
+            response = await agent.run(f"Perform a web search for: {query}")
+            return response.text
+            
+    except Exception as e:
+        return f"Error performing web search: {type(e).__name__} - {str(e)}"
 ```
 
-> [!knowledge] **MCP Tool Best Practices**
+> [!knowledge] **What You Just Learned**
 > 
-> - Use type hints with `Annotated` and `Field` for parameter documentation
-> - Provide clear descriptions that help LLMs understand when to use the tool
-> - Return structured, parseable text responses
-> - Handle errors gracefully with informative messages
-> - Use async/await for I/O operations
+> **@ai_function Pattern**:
+> - `@ai_function`: Decorator that generates OpenAI function schemas automatically
+> - `Annotated[type, Field(...)]`: Provides descriptions for the LLM to understand parameters
+> - **Async functions**: All tools should be async for non-blocking I/O operations
+> - **Error handling**: Always return string results, even for errors (LLMs can interpret error messages)
+> 
+> **HostedWebSearchTool**:
+> - Built-in Azure AI tool - Grounding with Bing Search
+> - Automatically handles API authentication via Azure credentials
+> - Returns structured results with source citations
+> 
+> **When is this called?**: When the Venue Specialist (or any agent with this tool) needs to find venues online, the LLM will automatically invoke `web_search("event venues in Seattle for 50 people")`.
 
-### Exercise 4: Understand Human-in-the-Loop Integration
+---
 
-**Concept**: The `HumanInLoopAgentExecutor` intercepts tool calls to `request_user_input`, pausing workflow execution until the user responds via DevUI.
+===
 
-**Open** **src/spec_to_agents/workflow/executors.py** and **review** the implementation:
+## 8. Exercise 3: Add MCP Sequential Thinking Tool
+
+**Concept**: **MCP (Model Context Protocol)** is an open standard for connecting AI models to external tools. The `sequential-thinking-tools` MCP server provides advanced reasoning capabilities.
+
+**Open** **`tools/mcp_tools.py`** and find the `# TODO: Exercise 3` comment (around line 8).
+
+**Replace the TODO section with**:
 
 ```python
-class HumanInLoopAgentExecutor(Executor):
+# TODO: Exercise 3 - Create MCP sequential thinking tool for complex reasoning
+
+def create_sequential_thinking_tool() -> MCPStdioTool:
     """
-    Wraps AgentExecutor to enable human-in-the-loop via request_user_input tool.
+    Create sequential-thinking-tools MCP server for breaking down complex tasks.
+    
+    This tool helps agents:
+    - Decompose complex planning into steps
+    - Track reasoning through multi-step problems
+    - Maintain context across reasoning chains
+    
+    Returns unconnected MCPStdioTool - must be used with async context manager.
+    """
+    return MCPStdioTool(
+        name="sequential-thinking-tools",
+        command="npx",  # Use Node.js package runner
+        args=["-y", "mcp-sequentialthinking-tools"],  # Install and run MCP server
+        env={
+            "MAX_HISTORY_SIZE": os.getenv("MAX_HISTORY_SIZE", "1000"),
+        },
+    )
+```
+
+> [!knowledge] **What You Just Learned**
+> 
+> **MCP (Model Context Protocol)**:
+> - Open standard for AI model ↔ tool communication
+> - Similar to how USB is a standard for device connections
+> - Enables language models to discover and use external tools
+> 
+> **MCPStdioTool**:
+> - Connects to MCP servers via stdio (standard input/output)
+> - `command` and `args`: Launches the MCP server process
+> - `npx -y mcp-sequentialthinking-tools`: Downloads and runs the MCP server on-demand
+> 
+> **Sequential Thinking**:
+> - Helps agents break down complex decisions: "Should I pick Venue A or B?"
+> - Creates step-by-step reasoning chains
+> - Example: Budget Analyst uses this to compare allocation strategies
+> 
+> **Async Context Manager Pattern**:
+> ```python
+> async with create_sequential_thinking_tool() as mcp_tool:
+>     # MCP server starts automatically
+>     # Tool is now connected and ready
+>     pass
+>     # Server stops automatically when exiting context
+> ```
+
+---
+
+===
+
+## 9. Exercise 4: Define Structured Output Format
+
+**Concept**: **Structured outputs** ensure agents return predictable, parseable responses instead of free-form text. This enables reliable workflow routing.
+
+**Open** **`models/messages.py`** and find the `# TODO: Exercise 4` comment (around line 25).
+
+**Replace the TODO section with**:
+
+```python
+# TODO: Exercise 4 - Define SpecialistOutput for structured agent responses
+
+class SpecialistOutput(BaseModel):
+    """
+    Structured output from each specialist agent.
+    
+    This model enforces that specialists provide:
+    1. A concise summary of their work
+    2. Routing decision (next_agent or user_input_needed)
+    3. Optional user prompt if input is needed
+    
+    Example responses:
+    
+    Route to next agent:
+    {
+        "summary": "Researched 3 venues: The Foundry ($2k, 60 capacity), 
+                    Pioneer Square Hall ($1.5k, 50 capacity), 
+                    Fremont Studios ($3k, 80 capacity). 
+                    Recommended The Foundry for best value.",
+        "next_agent": "budget",
+        "user_input_needed": false,
+        "user_prompt": null
+    }
+    
+    Request user input:
+    {
+        "summary": "Found 3 excellent venue options with different tradeoffs.",
+        "next_agent": null,
+        "user_input_needed": true,
+        "user_prompt": "Which venue do you prefer: The Foundry (modern, $2k), 
+                        Pioneer Square Hall (historic, $1.5k), or 
+                        Fremont Studios (industrial, $3k)?"
+    }
+    """
+    
+    summary: str = Field(
+        description="Concise summary of this specialist's recommendations (max 200 words)"
+    )
+    
+    next_agent: str | None = Field(
+        description=(
+            "ID of next agent to route to ('venue', 'budget', 'catering', 'logistics'), "
+            "or null if done/need user input"
+        )
+    )
+    
+    user_input_needed: bool = Field(
+        default=False,
+        description="Whether user input is required before proceeding"
+    )
+    
+    user_prompt: str | None = Field(
+        default=None,
+        description="Question to ask user if user_input_needed=True"
+    )
+```
+
+> [!knowledge] **What You Just Learned**
+> 
+> **Structured Outputs with Pydantic**:
+> - `BaseModel`: Pydantic base class for type-safe data models
+> - `Field(description=...)`: Provides hints to the LLM about each field's purpose
+> - **Type hints**: `str | None` means "string or null" - LLM understands optional fields
+> - **Default values**: `default=False` provides fallback if field is omitted
+> 
+> **Why This Matters**:
+> - **Predictable parsing**: You can reliably extract `next_agent` for routing
+> - **No regex parsing**: No need to parse free-form text like "I think we should move to the budget analyst next..."
+> - **LLM compliance**: When you set `response_format=SpecialistOutput`, the LLM is forced to return valid JSON matching this schema
+> 
+> **Routing Logic**:
+> ```python
+> if output.user_input_needed:
+>     # Pause workflow for human input
+> elif output.next_agent:
+>     # Route to specified agent
+> else:
+>     # Workflow complete - synthesize final plan
+> ```
+
+---
+
+===
+
+## 10. Exercise 5: Build the Workflow with Edges
+
+**Concept**: The **WorkflowBuilder** defines how agents communicate through **edges**. Each edge represents a potential message-passing path between executors.
+
+**Open** **`workflow/core.py`** and find the `# TODO: Exercise 5` comment (around line 85).
+
+**Replace the TODO section with**:
+
+```python
+# TODO: Exercise 5 - Build the event planning workflow with agent executors
+
+def build_event_planning_workflow(
+    client: AzureAIAgentClient,
+    mcp_tool: MCPStdioTool | None = None,
+) -> Workflow:
+    """
+    Build the multi-agent event planning workflow.
+    
+    Architecture: Star topology with Event Coordinator at the center
     
     Flow:
-    1. Agent calls request_user_input tool
-    2. This executor intercepts the FunctionCallContent
-    3. Emits UserElicitationRequest to RequestInfoExecutor
-    4. Workflow pauses until user responds in DevUI
-    5. Receives RequestResponse and continues workflow
+    1. User → Coordinator (analyzes request)
+    2. Coordinator → Venue Specialist (finds venues)
+    3. Venue → Coordinator (reports findings)
+    4. Coordinator → Budget Analyst (allocates budget)
+    5. Budget → Coordinator (reports allocation)
+    6. Coordinator → Catering (plans menu)
+    7. Catering → Coordinator (reports menu)
+    8. Coordinator → Logistics (creates timeline)
+    9. Logistics → Coordinator (reports timeline)
+    10. Coordinator → User (synthesizes final plan)
     """
-
-    @handler
-    async def from_response(
-        self, response: AgentExecutorResponse, 
-        ctx: WorkflowContext[UserElicitationRequest | AgentExecutorResponse]
-    ) -> None:
-        """Check for request_user_input tool calls."""
-        self._current_response = response
-
-        user_request = self._extract_user_request(response)
-
-        if user_request:
-            # Emit request to RequestInfoExecutor - workflow pauses
-            await ctx.send_message(
-                UserElicitationRequest(
-                    prompt=user_request.get("prompt", ""),
-                    context=user_request.get("context", {}),
-                    request_type=user_request.get("request_type", "clarification"),
-                ),
-                target_id=self._request_info_id,
-            )
-        else:
-            # No user input needed - continue to next agent
-            await ctx.send_message(response)
-
-    @handler
-    async def accept_human_response(
-        self, response: RequestResponse[UserElicitationRequest, str],
-        ctx: WorkflowContext[AgentExecutorResponse]
-    ) -> None:
-        """User responded - continue workflow."""
-        if self._current_response:
-            await ctx.send_message(self._current_response)
+    
+    # Create all agents
+    coordinator_agent = event_coordinator.create_agent(client)
+    venue_agent = venue_specialist.create_agent(client, mcp_tool)
+    budget_agent = budget_analyst.create_agent(client, mcp_tool)
+    catering_agent = catering_coordinator.create_agent(client, mcp_tool)
+    logistics_agent = logistics_manager.create_agent(client, mcp_tool)
+    
+    # Create coordinator executor with custom routing logic
+    coordinator = EventPlanningCoordinator(coordinator_agent)
+    
+    # Wrap specialist agents as AgentExecutors
+    venue_exec = AgentExecutor(agent=venue_agent, id="venue")
+    budget_exec = AgentExecutor(agent=budget_agent, id="budget")
+    catering_exec = AgentExecutor(agent=catering_agent, id="catering")
+    logistics_exec = AgentExecutor(agent=logistics_agent, id="logistics")
+    
+    # Build workflow with bidirectional star topology
+    workflow = (
+        WorkflowBuilder(
+            name="Event Planning Workflow",
+            description=(
+                "Multi-agent event planning workflow with venue selection, budgeting, "
+                "catering, and logistics coordination. Supports human-in-the-loop."
+            ),
+            max_iterations=30,  # Safety limit to prevent infinite loops
+        )
+        # Set coordinator as starting point
+        .set_start_executor(coordinator)
+        
+        # Bidirectional edges: Coordinator ↔ Each Specialist
+        .add_edge(coordinator, venue_exec)
+        .add_edge(venue_exec, coordinator)
+        
+        .add_edge(coordinator, budget_exec)
+        .add_edge(budget_exec, coordinator)
+        
+        .add_edge(coordinator, catering_exec)
+        .add_edge(catering_exec, coordinator)
+        
+        .add_edge(coordinator, logistics_exec)
+        .add_edge(logistics_exec, coordinator)
+        
+        .build()
+    )
+    
+    # Set stable ID for DevUI
+    workflow.id = "event-planning-workflow"
+    
+    return workflow
 ```
 
-> [!knowledge] **HITL Pattern Benefits**
+> [!knowledge] **What You Just Learned**
 > 
-> - **Flexible Approval Gates**: Agents decide when user input is needed
-> - **Context-Aware**: User sees agent's reasoning and proposed recommendations
-> - **Non-Blocking**: Other agents can continue while waiting for input
-> - **DevUI Integration**: Seamless UI for user interaction
+> **Workflow Builder Pattern**:
+> - **`WorkflowBuilder`**: Abstraction for constructing workflows
+> - **`.set_start_executor()`**: Defines workflow entry point
+> - **`.add_edge(from, to)`**: Adds directed communication path
+> - **`.build()`**: Validates and creates the workflow instance
+> 
+> **Executor Types**:
+> - **`AgentExecutor`**: Standard wrapper for ChatAgent instances
+> - **`EventPlanningCoordinator`**: Custom executor with routing logic
+> - **`id` parameter**: Used for routing (`next_agent="budget"` routes to executor with `id="budget"`)
+> 
+> **Star Topology** (vs. Linear):
+> ```
+> Linear:  A → B → C → D (rigid, single path)
+> 
+> Star:      B
+>           ↗ ↘
+>     A ← → Hub ← → C    (flexible, coordinator decides routing)
+>           ↖ ↙
+>            D
+> ```
+> 
+> **Bidirectional Edges**:
+> - `.add_edge(coordinator, venue)`: Coordinator can send to venue
+> - `.add_edge(venue, coordinator)`: Venue can send back to coordinator
+> - **Why?** Coordinator reads `SpecialistOutput.next_agent` and routes dynamically
+> 
+> **Workflow Execution**:
+> ```python
+> result = await workflow.run("Plan a party for 50 people")
+> # 1. Starts at coordinator
+> # 2. Coordinator routes to venue
+> # 3. Venue returns SpecialistOutput(next_agent="budget")
+> # 4. Coordinator routes to budget
+> # 5. Budget returns SpecialistOutput(next_agent="catering")
+> # ... and so on
+> ```
 
 ---
+===
 
-## 7  Install Python Dependencies
+## 11. Install Dependencies and Environment Setup
 
-1. Navigate to the **src** directory:
+Before running the workflow, let's install the project dependencies.
+
+1. **Ensure you are in the repository root directory**:
    ```powershell
-   cd $HOME\spec-to-agents\src  # Or appropriate path
+   cd $HOME\spec-to-agents  # or wherever you cloned the repo
    ```
 
-2. Create and activate virtual environment:
+2. **Install dependencies** (includes automatic virtual environment creation):
    ```powershell
-   uv venv .venv
-   .venv\Scripts\activate
+   $env:GIT_LFS_SKIP_SMUDGE = "1"; uv sync --extra dev
    ```
 
-3. Install dependencies:
-   ```powershell
-   uv pip install -r requirements.txt
-   ```
+   > [!knowledge] **What does this do?**
+   > 
+   > - `GIT_LFS_SKIP_SMUDGE = "1"`: Skips downloading large Git LFS files (not needed for this lab)
+   > - `uv sync --extra dev`: Creates a `.venv` automatically and installs all dependencies
+   > - `--extra dev`: Includes development tools like linters and formatters
+   > 
+   > **Note**: You don't need to manually activate the virtual environment - `uv` handles this automatically when you run `uv run` commands!
 
----
-
-## 8  Verify Provisioning and Local Settings
-
-1. Check the terminal where `azd provision` is running. Wait for successful completion.
-
-2. After provisioning, verify **src/.env** was created with values like:
+3. **Verify `.env` file was created** (from earlier `azd provision`):
+   
+   Check that **`.env`** exists in the root directory with values like:
    ```
    AZURE_OPENAI_ENDPOINT=https://...
    PROJECT_CONNECTION_STRING=...
    AGENTS_MODEL_DEPLOYMENT_NAME=gpt-4o
-   EMBEDDING_MODEL_DEPLOYMENT_NAME=text-embedding-3-small
    ```
-
-3. If `.env` is missing, manually run:
+   
+   If missing, manually run from the repository root:
    ```powershell
-   # From spec-to-agents root
    .\scripts\generate-settings.ps1
    ```
 
 ---
+===
 
-## 9  Run Locally with DevUI
+## 12. Run Your First Multi-Agent Workflow
 
-Now test your multi-agent system locally:
+Now let's see your agents in action!
 
-1. Start the application (from **src** directory with venv activated):
+1. **Start the console application** (from the repository root):
+   ```powershell
+   uv run console
+   ```
+
+2. **You'll see a welcome screen** with agent descriptions and MCP tool initialization:
+   
+   ```
+   ╭─────────────────────────────────────────────────────────────────────╮
+   │                                                                     │
+   │                      Event Planning Workflow                        │
+   │              Interactive CLI with AI-Powered Agents                 │
+   │                                                                     │
+   ╰─────────────────────────────────────────────────────────────────────╯
+
+   This workflow uses specialized AI agents to help you plan events:
+     • Venue Specialist - Researches and recommends venues
+     • Budget Analyst - Manages costs and financial planning
+     • Catering Coordinator - Handles food and beverage
+     • Logistics Manager - Coordinates schedules and resources
+
+   You may be asked for clarification or approval at various steps.
+
+   Available tools: [ 'sequentialthinking_tools' ]
+   Sequential Thinking MCP Server running on stdio
+   ✓ Workflow loaded successfully
+   ```
+
+3. **Enter a test prompt** when asked. Try one of these examples:
+   
+   ```
+   ─────────────────────────── Event Planning Request ───────────────────────────
+
+   Enter your event planning request
+   Or select from these examples:
+     1. Plan a corporate holiday party for 50 people, budget $5000
+     2. Organize a wedding reception for 150 guests in Seattle
+     3. Host a tech conference with 200 attendees, need catering and AV
+
+   Your request (or 1-3 for examples): _
+   ```
+   
+   **Option 1** (Simple with clear constraints):
+   ```
+   Plan a corporate holiday party for 50 people, budget $5000
+   ```
+   
+   **Option 2** (Wedding - larger scale):
+   ```
+   Organize a wedding reception for 150 guests in Seattle
+   ```
+   
+   **Option 3** (Complex multi-day event):
+   ```
+   Host a tech conference with 200 attendees, need catering and AV
+   ```
+   
+   Or type your own custom event planning request!
+
+4. **Watch the workflow execute**. You'll see structured output as agents work sequentially:
+
+   ```
+   ─────────────────────────────── Workflow Execution ───────────────────────────
+
+
+   ──────────────────────────────────── venue ────────────────────────────────────
+   {"summary":"I recommend The Foundry in Seattle for your wedding reception with 
+   150 guests. It offers a spacious capacity suitable for this size, located 
+   centrally with excellent accessibility including parking and public transit 
+   options. The venue provides elegant ambiance appropriate for weddings and is 
+   equipped with essential amenities such as AV equipment, catering facilities, 
+   and accessibility features.","next_agent":"budget","user_input_needed":false,
+   "user_prompt":null}
+
+   ──────────────────────────────────── budget ───────────────────────────────────
+   {"summary":"For your wedding reception of 150 guests at The Foundry in Seattle, 
+   I recommend a total budget around $22,500 based on industry standards for formal 
+   events at $150 per person. The budget allocation would be: Venue rental 
+   approximately $11,000 (about 49%), Catering $6,750 (30%), Equipment/AV $1,350 
+   (6%), Decorations $900 (4%), Staff/Services $675 (3%), and a contingency fund 
+   of $1,800 (8%).","next_agent":"catering","user_input_needed":false,
+   "user_prompt":null}
+
+   ─────────────────────────────────── catering ──────────────────────────────────
+   {"summary":"For the wedding reception with 150 guests in Seattle, I recommend 
+   a buffet-style catering menu to balance formality and flexibility. The menu 
+   includes three entrée options (e.g., chicken, beef, vegetarian), two sides, 
+   a fresh salad, assorted desserts, and beverage options including wine, beer, 
+   and non-alcoholic drinks. This approach accommodates vegetarian and gluten-free 
+   guests by default. Estimated cost is around $45-$50 per person.","next_agent":
+   "logistics","user_input_needed":false,"user_prompt":null}
+
+   ─────────────────────────────────── logistics ─────────────────────────────────
+   ╭──────────────────────────────── Function Call ─────────────────────────────╮
+   │ 🔧 Tool Call: create_calendar_event                                        │
+   │ Call ID: ["run_zWZDBOHAgp7PlIoJDi1Xc1tA", "call_JbFWLm2ebkzstYsugJdVUIsH"]│
+   │                                                                            │
+   │ {"event_title": "Wedding Reception - The Foundry, Seattle",               │
+   │  "start_date": "2024-09-21", "start_time": "17:00", "duration_hours": 5,  │
+   │  "location": "The Foundry, Seattle", "description": "Wedding reception    │
+   │  for 150 guests. Setup starts at 2:00 PM, event from 5:00 PM to 10:00 PM"}│
+   ╰────────────────────────────────────────────────────────────────────────────╯
+
+   ╭──────────────────────────────── Function Call ─────────────────────────────╮
+   │ 🔧 Tool Call: get_weather_forecast                                         │
+   │ Call ID: ["run_zWZDBOHAgp7PlIoJDi1Xc1tA", "call_ThfrWG6ElVqYZCqFpxWTm8Aq"]│
+   │                                                                            │
+   │ {"location": "Seattle", "days": 1}                                         │
+   ╰────────────────────────────────────────────────────────────────────────────╯
+
+   ╭───────────────────────────────── Tool Result ──────────────────────────────╮
+   │ Call ID: ["run_zWZDBOHAgp7PlIoJDi1Xc1tA", "call_JbFWLm2ebkzstYsugJdVUIsH"]│
+   │                                                                            │
+   │ Successfully created event 'Wedding Reception - The Foundry, Seattle' on  │
+   │ 2024-09-21 at 17:00 in calendar 'event_planning'                          │
+   ╰────────────────────────────────────────────────────────────────────────────╯
+
+   ╭───────────────────────────────── Tool Result ──────────────────────────────╮
+   │ Call ID: ["run_zWZDBOHAgp7PlIoJDi1Xc1tA", "call_ThfrWG6ElVqYZCqFpxWTm8Aq"]│
+   │                                                                            │
+   │ Weather forecast for Seattle, United States:                              │
+   │ 2025-11-05: moderate rain, 10.2°C to 14.0°C, 88% chance of precipitation  │
+   ╰────────────────────────────────────────────────────────────────────────────╯
+
+   {"summary":"Event timeline for the wedding reception at The Foundry in 
+   Seattle on September 21, 2024: Setup begins at 2:00 PM to allow for catering, 
+   decoration, and AV preparation. Guest arrival and doors open at 5:00 PM, with 
+   buffet service starting around 5:30 PM lasting approximately two hours, 
+   followed by speeches and dancing. Cleanup concludes by 10:00 PM. Weather 
+   forecast indicates moderate rain with temperatures between 10.2°C and 14.0°C, 
+   so an indoor venue plan is appropriate.","next_agent":null,
+   "user_input_needed":false,"user_prompt":null}
+   ```
+
+   > [!knowledge] **Understanding the Output**
+   > 
+   > **Agent Headers**: Each `────── agent_name ──────` shows which specialist is working
+   > 
+   > **Structured Output**: The JSON you see is the `SpecialistOutput` model:
+   > - `"summary"`: What the agent accomplished
+   > - `"next_agent"`: Where to route next ("budget", "catering", "logistics", or null)
+   > - `"user_input_needed"`: Whether to pause for human input
+   > 
+   > **Tool Calls**: When agents invoke tools, you see:
+   > - Function name and parameters (what the agent is requesting)
+   > - Tool results (what the tool returned)
+   > 
+   > **Example**: The Logistics Manager calls `create_calendar_event` and `get_weather_forecast` in parallel, then incorporates the results into its plan.
+
+5. **Human-in-the-Loop Interaction** (if needed):
+   
+   Some agents may pause and request your input. You'll see a formatted prompt:
+   
+   ```
+   ╭────────────────────────────────────────────────────────────────────╮
+   │                    🤔 VENUE Agent Request                          │
+   │                                                                    │
+   │ Type: selection                                                    │
+   │                                                                    │
+   │ Question:                                                          │
+   │ I found 3 excellent venue options. Which do you prefer?           │
+   │                                                                    │
+   │ Additional Context:                                                │
+   │ venues:                                                            │
+   │   • The Foundry: $2k, modern, downtown                            │
+   │   • Pioneer Square: $1.8k, historic, transit access               │
+   │   • Fremont Studios: $2.5k, industrial, rooftop                   │
+   ╰────────────────────────────────────────────────────────────────────╯
+   
+   Your response: _
+   ```
+   
+   Type your choice (e.g., "The Foundry" or "1") and press Enter to continue.
+
+6. **Final Output**:
+   
+   After all agents complete, you'll see the comprehensive event plan:
+   
+   ```
+   ──────────────────────────────── Final Event Plan ─────────────────────────────
+
+   ╭──────────────────────────────── Event Plan Summary ───────────────────────╮
+   │                                                                            │
+   │                             Executive Summary                              │
+   │                                                                            │
+   │  This comprehensive plan outlines the wedding reception for 150 guests in │
+   │  Seattle, designed to ensure a seamless and memorable event.              │
+   │                                                                            │
+   │                                  Venue                                     │
+   │                                                                            │
+   │  The Foundry in Seattle is chosen for its spacious capacity, elegant      │
+   │  ambiance, central location, and excellent amenities, including AV,       │
+   │  catering kitchen, and accessibility. It comfortably accommodates 150     │
+   │  guests with versatile event space.                                       │
+   │                                                                            │
+   │                                 Budget                                     │
+   │                                                                            │
+   │  The budget estimate is approximately $22,500, allocated roughly as 49%   │
+   │  for venue rental ($11,000), 30% for catering ($6,750), 6% for AV         │
+   │  equipment ($1,350), 4% for decorations ($900), 3% for staff/services     │
+   │  ($675), and 8% contingency ($1,800). This balanced distribution ensures  │
+   │  quality and flexibility.                                                 │
+   │                                                                            │
+   │                                Catering                                    │
+   │                                                                            │
+   │  A buffet-style menu is planned with three entrée options (chicken, beef, │
+   │  vegetarian), two sides, salad, assorted desserts, and beverage selections│
+   │  including wine, beer, and non-alcoholic drinks. This setup accommodates  │
+   │  dietary preferences including vegetarian and gluten-free guests and      │
+   │  supports a social, inviting atmosphere.                                  │
+   │                                                                            │
+   │                               Logistics                                    │
+   │                                                                            │
+   │  Event timeline includes setup starting at 2 PM with coordination of      │
+   │  decorators, AV, and caterers. Guests arrive by 5 PM with buffet service  │
+   │  commencing shortly after. Activities like speeches and dancing will      │
+   │  follow, concluding at 10 PM. Weather forecast calls for moderate rain,   │
+   │  so the indoor venue is ideal. The event has been calendared for smooth   │
+   │  coordination.                                                             │
+   │                                                                            │
+   │                              Next Steps                                    │
+   │                                                                            │
+   │  Confirm final guest list and menu choices, finalize vendor contracts for │
+   │  decorations and AV, and communicate timeline clearly to all service      │
+   │  providers and wedding party.                                             │
+   │                                                                            │
+   │  This integrated plan provides a strong foundation for a successful       │
+   │  wedding reception aligned with client expectations and practical         │
+   │  considerations.                                                           │
+   │                                                                            │
+   ╰────────────────────────────────────────────────────────────────────────────╯
+
+   ✓ Event planning complete!
+   ```
+
+> [!knowledge] **What Just Happened?**
+> 
+> **Workflow Execution Flow**:
+> 1. **Venue Specialist**: Researched venues in Seattle for 150 guests, selected The Foundry, returned `next_agent="budget"`
+> 2. **Event Coordinator**: Read the routing decision, forwarded venue details to Budget Analyst
+> 3. **Budget Analyst**: Calculated $22,500 budget based on $150/person industry standard, allocated across categories, returned `next_agent="catering"`
+> 4. **Event Coordinator**: Routed to Catering with budget constraints ($6,750 for food)
+> 5. **Catering Coordinator**: Designed buffet menu at $45-50/person, included dietary accommodations, returned `next_agent="logistics"`
+> 6. **Event Coordinator**: Routed to Logistics with full context
+> 7. **Logistics Manager**: 
+>    - Invoked `create_calendar_event` tool → Created calendar entry for Sept 21
+>    - Invoked `get_weather_forecast` tool → Retrieved Seattle weather (moderate rain)
+>    - Created detailed timeline based on venue, catering, and weather
+>    - Returned `next_agent=null` (workflow complete)
+> 8. **Event Coordinator**: Detected completion, synthesized comprehensive final plan from all agent outputs
+> 
+> **Key Observations**:
+> - **Service-managed threads**: Each agent automatically remembered all prior context
+> - **Structured routing**: The `next_agent` field drove the workflow path
+> - **Autonomous tool use**: Agents decided when to invoke tools (you didn't specify)
+> - **Parallel tool calls**: Logistics Manager called calendar and weather tools simultaneously
+> - **No human input needed**: Workflow ran autonomously because all constraints were provided
+
+
+---
+===
+
+## 13. BONUS: Visualize with DevUI
+
+Run the workflow with a visual interface for debugging and exploration.
+
+1. **Start DevUI** (from repository root):
    ```powershell
    uv run app
    ```
+   Browser opens at `http://localhost:8080`
 
-2. DevUI opens automatically at **http://localhost:8080**. You'll see:
-   - **Event Planning Workflow** in the workflows list
-   - Visual representation of the workflow graph
-   - Interactive chat interface
+2. **Run the Workflow**:
+   - Select **"Event Planning Workflow"** from the top dropdown
+   - Click **"Configure & Run"**
+   - Enter your prompt: `Plan a corporate holiday party for 50 people, budget $5000`
+   - Click **"Run Workflow"**
 
-3. **Test the Workflow**:
-   - Click on **Event Planning Workflow**
-   - Click **Start New Session**
-   - Enter a prompt: **Plan a tech conference for 100 people in Seattle with a $10,000 budget**
-   - Watch agents execute in sequence:
-     - Event Coordinator analyzes requirements
-     - Venue Specialist searches for venues
-     - Budget Analyst creates allocation
-     - Catering Coordinator plans menu
-     - Logistics Manager creates timeline
-     - Event Coordinator synthesizes final plan
+   !IMAGE[devui-run-workflow.png](instructions310255/devui-run-workflow.png)
 
-4. **Human-in-the-Loop Testing**:
-   - Some agents may pause and request input
-   - You'll see prompts like "Which venue do you prefer?"
-   - Provide responses and watch the workflow continue
+3. **Watch Execution**:
+   - **Graph**: Nodes light up green as agents execute
+   - **Events Tab**: Real-time agent outputs and structured JSON responses
+   - **Traces Tab**: Execution duration and routing decisions
+   - **Tools Tab**: Tool calls (like `web_search`) with arguments and results
 
-5. **Explore DevUI Features**:
-   - **Messages Tab**: See conversation history between agents
-   - **Workflow Graph**: Visual representation of agent interactions
-   - **Logs**: Detailed execution logs including tool calls
+   !IMAGE[devui-execution.png](instructions310255/devui-execution.png)
 
-![DevUI Event Planning](https://raw.githubusercontent.com/microsoft/spec-to-agents/main/assets/agent_tools.png)
-
-> [!knowledge] **Understanding the DevUI Interface**
+> [!knowledge] **DevUI vs Console**
 > 
-> DevUI provides real-time observability:
-> - **Node Colors**: Indicate agent execution status (running, completed, waiting)
-> - **Edge Animations**: Show message passing between agents
-> - **Tool Call Indicators**: Display when agents invoke tools
-> - **Human Input Prompts**: Clearly marked pause points
+> - **Visual workflow graph**: See agent communication patterns
+> - **Detailed traces**: Debug with execution timings and message routing
+> - **Tool inspection**: View all tool calls and results in one place
+
 
 ---
+===
+## 14. BONUS: Explore Supervisor Pattern (Alternative Branch)
 
-## 10  Deploy to Azure
+The main branch uses a **star topology** where a coordinator routes between specialists. There's an alternative **supervisor pattern** available on a different branch.
 
-Deploy your multi-agent system to Azure:
+!IMAGE[Event Planning Agent Design Bonus.png](instructions310255/Event Planning Agent Design Bonus.png)
 
-1. Stop the local DevUI (Ctrl+C)
-
-2. Deploy application code:
+1. **Switch to the supervisor branch**:
    ```powershell
-   cd $HOME\spec-to-agents  # Root directory
+   git fetch origin
+   git checkout feature/main-with-supervisor-workflow
+   ```
+
+2. **Run the supervisor workflow**:
+   ```powershell
+   uv run console
+   ```
+
+3. **Compare the patterns**:
+
+   **Star Topology (main branch)**:
+   ```
+   User → Coordinator → Venue → Coordinator → Budget → Coordinator → ...
+   ```
+   - Coordinator reads `SpecialistOutput.next_agent` to route
+   - Specialists don't directly communicate
+   - Coordinator synthesizes final output
+
+   **Supervisor Pattern (bonus branch)**:
+   ```
+   User → Supervisor
+            ├─→ Venue ──┐
+            ├─→ Budget ─┤
+            ├─→ Catering┤→ Supervisor → Final Plan
+            └─→ Logistics┘
+   ```
+   - Supervisor delegates tasks in parallel
+   - Specialists work independently
+   - Supervisor aggregates all results at once
+
+4. **When to use each**:
+   - **Star**: Sequential dependencies (budget depends on venue)
+   - **Supervisor**: Independent tasks (can run in parallel)
+
+---
+===
+
+## 15. Understanding What You Built
+
+Let's recap the key agent-framework concepts you've learned:
+
+### **Core Abstractions**
+
+| Concept | What It Is | Where You Used It |
+|---------|-----------|------------------|
+| **Agent** | ChatAgent with instructions + tools | `venue_specialist.create_agent()` |
+| **Tool** | `@ai_function` that agents can invoke | `web_search()`, MCP sequential thinking |
+| **Executor** | Wrapper for workflow integration | `AgentExecutor(agent, id="venue")` |
+| **Workflow** | Graph of agents connected by edges | `WorkflowBuilder().add_edge(...)` |
+| **Structured Output** | Pydantic model for predictable responses | `SpecialistOutput` |
+
+### **Key Patterns**
+
+**1. Agent Creation**:
+```python
+agent = client.create_agent(
+    name="AgentName",
+    instructions=SYSTEM_PROMPT,
+    tools=[tool1, tool2],
+    response_format=OutputModel,
+    store=True  # Automatic conversation history
+)
+```
+
+**2. Tool Definition**:
+```python
+@ai_function
+async def my_tool(
+    param: Annotated[str, Field(description="Help text for LLM")]
+) -> str:
+    # Implementation
+    return result
+```
+
+**3. Workflow Building**:
+```python
+workflow = (
+    WorkflowBuilder(name="My Workflow")
+    .set_start_executor(start)
+    .add_edge(from_executor, to_executor)
+    .build()
+)
+```
+
+**4. Structured Output**:
+```python
+class MyOutput(BaseModel):
+    summary: str
+    next_agent: str | None
+```
+
+### **Why Agent Framework?**
+
+- **Enterprise-Ready**: Built on proven Semantic Kernel infrastructure
+- **Multi-Agent Orchestration**: Native support for complex workflows
+- **Azure Integration**: Works seamlessly with Azure AI Foundry
+- **Observability**: Built-in tracing and monitoring
+- **Type Safety**: Pydantic models and Python type hints
+- **Flexible**: Supports both orchestrated and autonomous patterns
+
+---
+===
+
+## 16. Deploy to Azure
+
+Now let's deploy your workflow to Azure!
+
+1. **Ensure `azd provision` completed** (from Section 4). Check the terminal for success message.
+
+2. **Deploy the application**:
+   ```powershell
+   cd ..  # Back to repository root
    azd deploy
    ```
 
-3. AZD will:
-   - Package your application
-   - Deploy to Azure Container Apps
-   - Configure environment variables
-   - Output the deployed endpoint URL
+3. **Wait for deployment** (3-5 minutes). You'll see:
+   ```
+   Packaging services...
+   Building container image...
+   Pushing to Azure Container Registry...
+   Deploying to Azure Container Apps...
+   
+   SUCCESS: Deployed to https://devui-....azurecontainerapps.io
+   ```
 
-4. Note the **DevUI URL** from the output (e.g., `https://devui-...azurecontainerapps.io`)
+4. **Note the DevUI URL** from the output.
 
 ---
+===
 
-## 11  Explore Azure AI Foundry Integration
+## 17. Explore Azure AI Foundry
 
-Your agents are now running in Azure AI Agents Service. Let's explore:
+Your agents are also running in Azure AI Foundry!
 
-1. Open **Azure AI Foundry** (https://ai.azure.com) in Edge
+1. **Open Azure AI Foundry**: Navigate to +++**https://ai.azure.com**+++
 
-2. Navigate to your project: **agents-lab-@lab.LabInstance.Id**
+2. **Sign in** with your Azure credentials (from Section 1)
 
-3. **View Deployed Agents**:
-   - Click **Agents** in the left navigation
-   - See all five specialist agents listed
-   - Click any agent to view configuration
+3. **Open your project**:
+   - Click **All resources**
+   - Select **agents-lab-@lab.LabInstance.Id**
 
-4. **Explore Agent Runs**:
-   - Click **Runs** to see execution history
-   - Select a run to view detailed traces
-   - Examine tool calls, message exchanges, and reasoning
+4. **View Deployed Agents**:
+   - Left navigation → **Build** → **Agents**
+   - You'll see all 5 specialist agents listed
+   - Click any agent to view:
+     - System instructions
+     - Configured tools
+     - Model deployment
 
-5. **Test Agents Directly**:
-   - Click **Playground**
+   !IMAGE[ai-foundry-agents.png](instructions310255/ai-foundry-agents.png)
+
+5. **Test in Playground**:
+   - Click **Playground** tab
    - Select **Event Planning Workflow**
-   - Try prompts like:
-     - "Plan a wedding for 150 guests in San Francisco"
-     - "Organize a product launch event with $50k budget"
+   - Enter a prompt: "Plan a product launch event for 100 people"
+   - Watch the workflow execute in the cloud
 
-6. **Monitor with Application Insights**:
-   - Azure Portal → Your Resource Group
+6. **View Execution Traces**:
+   - Click **Tracing** in left navigation
+   - Select a recent workflow run
+   - Explore:
+     - Agent transitions
+     - Tool invocations
+     - Token usage
+     - Latency metrics
+
+7. **Monitor with Application Insights**:
+   - Navigate to **Azure Portal** → Your Resource Group
    - Click **Application Insights** resource
-   - View **Live Metrics** during execution
-   - Explore **Application Map** to see service dependencies
+   - View:
+     - **Live Metrics**: Real-time performance
+     - **Application Map**: Service dependencies
+     - **Performance**: Request duration and failures
 
 ---
+===
 
-## 12  Understanding A2A and MCP Integration
+## 18. Clean-Up
 
-Let's review what you've built:
-
-### **A2A Communication Flow**
-
-```
-User Input
-    ↓
-Event Coordinator (Analyzes requirements)
-    ↓ [A2A: Delegates with context]
-Venue Specialist (Searches venues)
-    ↓ [A2A: Passes venue recommendations]
-Budget Analyst (Allocates budget)
-    ↓ [A2A: Passes budget breakdown]
-Catering Coordinator (Plans menu)
-    ↓ [A2A: Passes catering plan]
-Logistics Manager (Creates timeline)
-    ↓ [A2A: Returns to coordinator]
-Event Coordinator (Synthesizes final plan)
-    ↓
-Complete Event Plan
-```
-
-### **MCP Tools in Action**
-
-Your agents used these MCP tools:
-
-1. **sequential-thinking-tools** (MCP Server)
-   - Complex reasoning and planning
-   - Breaking down tasks into steps
-   - Used by: All agents
-
-2. **Bing Search** (Hosted Tool)
-   - Web search for venues and caterers
-   - Used by: Venue Specialist, Catering Coordinator
-
-3. **Code Interpreter** (Hosted Tool)
-   - Financial calculations
-   - Used by: Budget Analyst
-
-4. **Weather Forecast** (Custom MCP Tool)
-   - Event date weather checking
-   - Used by: Logistics Manager
-
-5. **Calendar Tools** (Custom MCP Tools)
-   - Event scheduling
-   - Used by: Logistics Manager
-
----
-
-## 13  Advanced: Multi-Agent Patterns
-
-Your system demonstrates several key patterns:
-
-### **1. Sequential Workflow**
-```python
-.add_edge(coordinator, venue)
-.add_edge(venue, budget)
-.add_edge(budget, catering)
-```
-Each agent builds on previous outputs.
-
-### **2. Human-in-the-Loop**
-```python
-.add_edge(venue_agent, venue_hitl)
-.add_edge(venue_hitl, request_info)
-.add_edge(request_info, venue_hitl)
-```
-Bidirectional edges enable pause/resume.
-
-### **3. Tool Orchestration**
-```python
-tools=[bing_search, mcp_tool, request_user_input]
-```
-Each agent has specialized capabilities.
-
-### **4. Synthesis Pattern**
-```python
-.add_edge(logistics_hitl, coordinator)
-```
-Final agent aggregates all recommendations.
-
----
-
-## 14  Bonus Exercises (Optional)
-
-### **Bonus 1: Add a New Agent**
-
-Add a "Marketing Specialist" agent:
-
-1. Create **src/spec_to_agents/prompts/marketing_specialist.py**
-2. Create **src/spec_to_agents/agents/marketing_specialist.py**
-3. Update **workflow/core.py** to include the agent
-4. Add edges in the workflow
-
-### **Bonus 2: Custom MCP Tool**
-
-Create a "venue_availability_checker" tool:
-
-1. Add to **src/spec_to_agents/tools/**
-2. Integrate with Venue Specialist
-3. Test in DevUI
-
-### **Bonus 3: Parallel Execution**
-
-Modify workflow for parallel venue and catering research:
-
-```python
-# Fork after coordinator
-.add_edge(coordinator, venue)
-.add_edge(coordinator, catering)
-
-# Join before budget
-.add_edge(venue, join_executor)
-.add_edge(catering, join_executor)
-.add_edge(join_executor, budget)
-```
-
----
-
-## 15  Clean-Up
-
-> [!alert] **Important: Lab Environment Auto-Cleanup**
+> [!alert] **Important: Remove Azure Resources**
 > 
-> This lab environment will be automatically deleted after completion. Follow these steps to properly clean up Azure resources and sign out of accounts.
+> To avoid charges, delete all Azure resources created in this lab.
 
-1. **Delete Azure Resources**:
+1. **Delete Azure resources**:
    ```powershell
-   cd $HOME\spec-to-agents
    azd down --purge --force
    ```
 
-2. **Sign Out**:
-   - VS Code: Profile icon → Sign Out
-   - Edge: Sign out from GitHub, Azure Portal, Azure AI Foundry
+2. **Confirm deletion** when prompted. This removes:
+   - Azure AI Foundry project
+   - Model deployments
+   - Container Apps
+   - Container Registry
+   - All associated resources
+
+3. **Sign out** from services (Optional - lab will be purged automatically):
+   - VS Code: Click profile icon → **Sign Out**
+   - Edge: Sign out from GitHub, Azure Portal, AI Foundry
 
 ---
+===
 
-## Conclusion
+## Congratulations!
 
-Congratulations! You've successfully built a production-ready multi-agent system using Microsoft Agent Framework. You've learned:
+You've successfully built and deployed a production-ready multi-agent system! Here's what you mastered:
 
-### **Core Achievements**
+### **✅ Core Skills Acquired**
 
-✅ **Multi-Agent Orchestration**: Built five specialized agents working collaboratively  
-✅ **A2A Protocol**: Implemented agent-to-agent communication patterns  
-✅ **MCP Integration**: Connected external tools via Model Context Protocol  
-✅ **Workflow Orchestration**: Leveraged Agent Framework's key differentiator for complex multi-agent coordination  
-✅ **Azure AI Foundry**: Deployed to Azure AI Agents Service  
-✅ **DevUI**: Visualized real-time agent interactions  
-✅ **Human-in-the-Loop**: Implemented approval gates and user interaction  
+- **Agent Framework Fundamentals**:
+  - Created specialized agents with tools and instructions
+  - Implemented `@ai_function` tools for custom capabilities
+  - Used structured outputs for predictable agent responses
+  - Built multi-agent workflows with WorkflowBuilder
 
-### **Key Technologies Mastered**
+- **Protocol Integration**:
+  - **A2A**: Agent-to-agent message passing through edges
+  - **MCP**: Integrated external tools via Model Context Protocol
 
-- **Microsoft Agent Framework**: Enterprise-grade multi-agent orchestration combining Semantic Kernel and AutoGen
-- **Workflow Orchestration**: Declarative workflow definitions with state management and observability
-- **Azure AI Agents Service**: Managed AI agent execution
-- **MCP Tools**: Standardized tool integration
-- **A2A Communication**: Direct agent-to-agent messaging
+- **Production Deployment**:
+  - Deployed to Azure AI Foundry
+  - Monitored with Application Insights
+  - Visualized with DevUI
 
-### **Production Patterns**
+### **🎯 Key Takeaways**
 
-Your system demonstrates:
-- **Scalability**: Serverless Azure Container Apps deployment
-- **Observability**: Full tracing with Application Insights
-- **Flexibility**: Easy to add new agents and tools
-- **Reliability**: Managed execution with Azure AI Agents Service
+1. **Agents are composable**: Instructions + Tools + Response Format
+2. **Tools enable capabilities**: Web search, code execution, MCP servers
+3. **Workflows orchestrate**: Edges define communication paths
+4. **Structured outputs**: Enable reliable routing and parsing
+5. **Azure integration**: Enterprise-scale deployment with monitoring
 
-### **Next Steps**
+### **🚀 Next Steps**
 
-Continue exploring:
-- **Add More Agents**: Expand with transportation, entertainment specialists
-- **Custom Tools**: Build domain-specific MCP tools
-- **Advanced Workflows**: Implement conditional branching, loops
-- **Production Features**: Add authentication, rate limiting, monitoring
+Continue your agent-framework journey:
 
-You now have the foundation to build sophisticated AI agent systems that combine the reasoning power of LLMs with structured orchestration and external tool integration.
+- **Add more agents**: Create a Marketing Specialist or Transportation Coordinator
+- **Custom MCP tools**: Build domain-specific tool servers
+- **Advanced workflows**: Implement conditional branching and loops
+- **Production features**: Add authentication, rate limiting, cost tracking
+
+### **📚 Resources**
+
+- **Agent Framework**: [github.com/microsoft/agent-framework](https://github.com/microsoft/agent-framework)
+- **Azure AI Foundry**: [ai.azure.com](https://ai.azure.com)
+- **MCP Protocol**: [modelcontextprotocol.io](https://modelcontextprotocol.io)
 
 **Happy coding at Microsoft Ignite 2025!**
