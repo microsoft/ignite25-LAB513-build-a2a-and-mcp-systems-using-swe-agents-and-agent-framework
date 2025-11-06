@@ -60,7 +60,7 @@ Sign in to your lab environment using:
 Your lab environment comes pre-configured with:
 
 - **Visual Studio Code** - Primary development environment
-- **Python 3.13** - Latest stable version
+- **Python 3.14** - Latest stable version
 - **uv** - Fast Python package manager
 - **Azure CLI** - Manage Azure resources
 - **Azure Developer CLI (azd)** - Simplified deployment workflows
@@ -150,7 +150,7 @@ Before cloning the repository, you'll need to sign in to GitHub Copilot with the
 
 You'll use Azure Developer CLI (azd) to provision all necessary Azure resources. This process takes 5-10 minutes and runs in the background while you work on coding exercises.
 
-1. **Authenticate with Azure CLIs** (ensure you're in the *spec-to-agents* root directory):
+1. **Authenticate with Azure CLI** (ensure you're in the *spec-to-agents* root directory):
 
    First, authenticate with **azd**:
    
@@ -214,25 +214,26 @@ Before diving into coding, let's understand how the agent-framework code is orga
 **Open *src/spec-to-agents* folder from root in VS Code Explorer** and examine this structure:
 
 ```
-spec-to-agents/
-├── agents/                    # Agent definitions (one per specialist)
+src/spec-to-agents/
+├── agents/                     # Agent definitions (one per specialist)
 │   ├── venue_specialist.py
 │   ├── budget_analyst.py
 │   ├── catering_coordinator.py
 │   ├── logistics_manager.py
 │   └── event_coordinator.py
-├── prompts/                   # System prompts (agent instructions)
+├── prompts/                    # System prompts (agent instructions)
 │   └── [matching agent files]
-├── tools/                     # MCP tools and @ai_functions
+├── tools/                      # MCP tools and @ai_functions
 │   ├── bing_search.py
 │   ├── weather.py
 │   └── calendar.py
-├── models/                    # Data models for structured outputs
+├── models/                     # Data models for structured outputs
 │   └── messages.py
-├── workflow/                  # Workflow orchestration logic
-│   ├── core.py               # 🎯 Main workflow builder
-│   └── executors.py          # Custom executor logic
-└── console.py                # CLI entry point for testing
+├── workflow/                   # Workflow orchestration logic
+│   ├── core.py                 # 🎯 Main workflow builder
+│   └── executors.py            # Custom executor logic
+├── console.py                  # CLI entry point for testing
+└── main.py                     # DevUI entry point for testing
 ```
 
 > [!knowledge] **Agent Framework Code Organization**
@@ -404,7 +405,7 @@ def create_sequential_thinking_tool() -> MCPStdioTool:
 > - Enables language models to discover and use external tools
 > 
 > **MCPStdioTool**:
-> - Connects to MCP servers via stdio (standard input/output)
+> - Connects to MCP servers that communicate via Stdio (standard input/output)
 > - `command` and `args`: Launches the MCP server process
 > - `npx -y mcp-sequentialthinking-tools`: Downloads and runs the MCP server on-demand
 > 
@@ -421,6 +422,12 @@ def create_sequential_thinking_tool() -> MCPStdioTool:
 >     pass
 >     # Server stops automatically when exiting context
 > ```
+>
+> **MCP Tool Types**:
+> - There are three types of MCP tools depending on the protocol required
+>     - **MCPStdioTool**: Connects to MCP servers that communicate via Stdio (standard input/output)
+>     - **MCPStreamableHTTPTool**: Connects to MCP servers that communicate via streamable HTTP/SSE
+>     - **MCPWebsocketTool**: Connects to MCP servers that communicate via Web sockets.
 
 ---
 
@@ -618,12 +625,16 @@ def build_event_planning_workflow(
 > 
 > **Star Topology** (vs. Linear):
 > ```
-> Linear:  A → B → C → D (rigid, single path)
+> Linear:
+>     A → B → C → D (rigid, single path)
 > 
-> Star:      B
->           ↗ ↘
+> Star:
+>            B
+>            ↑
+>            ↓
 >     A ← → Hub ← → C    (flexible, coordinator decides routing)
->           ↖ ↙
+>            ↑
+>            ↓
 >            D
 > ```
 > 
@@ -976,6 +987,13 @@ Run the workflow with a visual interface for debugging and exploration.
    - **Tools Tab**: Tool calls (like `web_search`) with arguments and results
 
    !IMAGE[devui-execution.png](instructions310255/devui-execution.png)
+
+4. **Run the Agents**
+   - Select **"VenueSpecialist"** from the top dropdown
+   - Click the text box at the bottom of the page
+   - Enter your prompt: `Plan a corporate holiday party for 50 people, budget $5000`
+   - Click the **Tools** tab on the right hand side of the screen
+   - Inspect the call to the **web_search** tool
 
 > [!knowledge] **DevUI vs Console**
 > 
