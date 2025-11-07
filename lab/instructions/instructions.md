@@ -6,7 +6,7 @@ In this lab, you'll build a multi-agent event planning system using **[Microsoft
 
 You'll create specialized AI agents that collaborate to plan comprehensive events, learning how to:
 
-- **Build Multi-Agent Workflows**: Orchestrate multiple specialized agents (Event Coordinator, Venue Specialist, Budget Analyst, Catering Coordinator, and Logistics Manager) that work together through workflow edges and message passing. The framework supports **Agent-to-Agent (A2A) protocol** for direct inter-agent communication and **Model Context Protocol (MCP)** for integrating external tools like weather forecasting and calendar management.
+- **Build Multi-Agent Workflows**: Orchestrate multiple specialized agents (Event Coordinator, Venue Specialist, Budget Analyst, Catering Coordinator, and Logistics Manager) that work together through workflow edges and message passing. The framework supports **Agent-to-Agent (A2A) communication** for direct inter-agent messaging and **Model Context Protocol (MCP)** for integrating external tools like weather forecasting and calendar management.
 
 - **Deploy to Azure AI Foundry**: Run your agent-framework workflows in Azure AI Foundry, where agents are automatically registered and managed with full enterprise-grade capabilities, security, and observability.
 
@@ -14,7 +14,7 @@ You'll create specialized AI agents that collaborate to plan comprehensive event
 
 The system demonstrates concurrent workflow execution patterns where agents work in sequence and in parallel, exchange information through the workflow, invoke MCP tools for specialized capabilities, and synthesize comprehensive event plans. You'll also implement **human-in-the-loop** capabilities, allowing user input and approval at critical decision points during agent execution.
 
-!IMAGE[Event Planning Agent Design Final 1.png](instructions310255/Event Planning Agent Design Final 1.png)
+!IMAGE[Event Planning Agent Design Final 1.png](instructions310255/Event Planning Agent Design Final 1.png){600}
 
 ---
 
@@ -35,7 +35,7 @@ MCP is an open standard that defines how AI models access external tools and dat
 - **Weather forecasting**: External API integration via MCP
 - **Calendar management**: Persistent scheduling capabilities
 
-### **Agent-to-Agent (A2A) Protocol**
+### **Agent-to-Agent (A2A) Communication**
 
 A2A is an emerging standard for enabling direct communication between AI agents. With A2A:
 
@@ -43,7 +43,7 @@ A2A is an emerging standard for enabling direct communication between AI agents.
 - **Standardized Messaging**: A common protocol ensures agents built with different frameworks can communicate
 - **Framework Compatibility**: Microsoft Agent Framework supports A2A for inter-agent communication patterns
 
-Your workflow in this lab uses message passing between agents through workflow edges. Agent Framework also supports A2A protocol for scenarios requiring direct agent-to-agent communication beyond workflow orchestration.
+Your workflow in this lab uses message passing between agents through workflow edges. Agent Framework also supports A2A communication patterns for scenarios requiring direct agent-to-agent communication beyond workflow orchestration.
 
 ---
 
@@ -150,7 +150,7 @@ Before cloning the repository, you'll need to sign in to GitHub Copilot with the
 
 You'll use Azure Developer CLI (azd) to provision all necessary Azure resources. This process takes 5-10 minutes and runs in the background while you work on coding exercises.
 
-1. **Authenticate with Azure CLI** (ensure you're in the *spec-to-agents* root directory):
+1. **Authenticate with Azure CLIs** (ensure you're in the *spec-to-agents* root directory):
 
    First, authenticate with **azd**:
    
@@ -215,25 +215,24 @@ Before diving into coding, let's understand how the agent-framework code is orga
 
 ```
 src/spec-to-agents/
-├── agents/                     # Agent definitions (one per specialist)
+├── agents/                    # Agent definitions (one per specialist)
 │   ├── venue_specialist.py
 │   ├── budget_analyst.py
 │   ├── catering_coordinator.py
 │   ├── logistics_manager.py
 │   └── event_coordinator.py
-├── prompts/                    # System prompts (agent instructions)
+├── prompts/                   # System prompts (agent instructions)
 │   └── [matching agent files]
-├── tools/                      # MCP tools and @ai_functions
+├── tools/                     # MCP tools and @ai_functions
 │   ├── bing_search.py
 │   ├── weather.py
 │   └── calendar.py
-├── models/                     # Data models for structured outputs
+├── models/                    # Data models for structured outputs
 │   └── messages.py
-├── workflow/                   # Workflow orchestration logic
-│   ├── core.py                 # 🎯 Main workflow builder
-│   └── executors.py            # Custom executor logic
-├── console.py                  # CLI entry point for testing
-└── main.py                     # DevUI entry point for testing
+├── workflow/                  # Workflow orchestration logic
+│   ├── core.py               # 🎯 Main workflow builder
+│   └── executors.py          # Custom executor logic
+└── console.py                # CLI entry point for testing
 ```
 
 > [!knowledge] **Agent Framework Code Organization**
@@ -283,6 +282,9 @@ def create_agent(client: AzureAIAgentClient, mcp_tool: MCPStdioTool | None) -> C
     )
 ```
 
+>[!NOTE]
+> Don't worry about the *web_search* tool yet! You'll implement it in the next exercise (Exercise 2). For now, just understand that *web_search* is a tool that will give your agent the ability to search the internet for venue information.
+
 > [!knowledge] **What You Just Learned**
 > 
 > **Agent Creation Pattern**:
@@ -303,7 +305,7 @@ def create_agent(client: AzureAIAgentClient, mcp_tool: MCPStdioTool | None) -> C
 
 **Concept**: Tools in agent-framework are Python functions decorated with `@ai_function`. The LLM can discover and invoke these tools automatically when needed.
 
-!IMAGE[Agent Tools Final.png](instructions310255/Agent Tools Final.png)
+!IMAGE[Agent Tools Final.png](instructions310255/Agent Tools Final.png){700}
 
 **Open** **`tools/bing_search.py`** and find the `# TODO: Exercise 2` comment (around line 15).
 
@@ -405,7 +407,7 @@ def create_sequential_thinking_tool() -> MCPStdioTool:
 > - Enables language models to discover and use external tools
 > 
 > **MCPStdioTool**:
-> - Connects to MCP servers that communicate via Stdio (standard input/output)
+> - Connects to MCP servers via stdio (standard input/output)
 > - `command` and `args`: Launches the MCP server process
 > - `npx -y mcp-sequentialthinking-tools`: Downloads and runs the MCP server on-demand
 > 
@@ -422,13 +424,12 @@ def create_sequential_thinking_tool() -> MCPStdioTool:
 >     pass
 >     # Server stops automatically when exiting context
 > ```
->
 > **MCP Tool Types**:
 > - There are three types of MCP tools depending on the protocol required
 >     - **MCPStdioTool**: Connects to MCP servers that communicate via Stdio (standard input/output)
 >     - **MCPStreamableHTTPTool**: Connects to MCP servers that communicate via streamable HTTP/SSE
 >     - **MCPWebsocketTool**: Connects to MCP servers that communicate via Web sockets.
-
+>
 ---
 
 ===
@@ -978,7 +979,7 @@ Run the workflow with a visual interface for debugging and exploration.
    - Enter your prompt: `Plan a corporate holiday party for 50 people, budget $5000`
    - Click **"Run Workflow"**
 
-   !IMAGE[devui-run-workflow.png](instructions310255/devui-run-workflow.png)
+   !IMAGE[devui-run-workflow.png](instructions310255/devui-run-workflow.png){700}
 
 3. **Watch Execution**:
    - **Graph**: Nodes light up green as agents execute
@@ -986,7 +987,7 @@ Run the workflow with a visual interface for debugging and exploration.
    - **Traces Tab**: Execution duration and routing decisions
    - **Tools Tab**: Tool calls (like `web_search`) with arguments and results
 
-   !IMAGE[devui-execution.png](instructions310255/devui-execution.png)
+   !IMAGE[devui-execution.png](instructions310255/devui-execution.png){900}
 
 4. **Run the Agents**
    - Select **"VenueSpecialist"** from the top dropdown
@@ -1008,7 +1009,7 @@ Run the workflow with a visual interface for debugging and exploration.
 
 The main branch uses a **star topology** where a coordinator routes between specialists. There's an alternative **supervisor pattern** available on a different branch.
 
-!IMAGE[Event Planning Agent Design Bonus.png](instructions310255/Event Planning Agent Design Bonus.png)
+!IMAGE[Event Planning Agent Design Bonus.png](instructions310255/Event Planning Agent Design Bonus.png){800}
 
 1. **Switch to the supervisor branch**:
    ```powershell
