@@ -130,28 +130,38 @@ Before cloning the repository, you'll need to sign in to GitHub Copilot with the
 2. Clone the Microsoft spec-to-agents repository and open the project:
 
    ```powershell
-   # Clone the repository
-   git clone https://github.com/microsoft/spec-to-agents.git
-   cd spec-to-agents
+# Clone the repository
+git clone https://github.com/microsoft/spec-to-agents.git
+cd spec-to-agents
 
-   # TODO: Checkout Ignite lab branch
+# Checkout Ignite lab branch
+git checkout ignite-2025
 
-   # Open in VS Code
-   code . --reuse-window
+# Open in VS Code
+code . --reuse-window
 
    ```
 
 3. VS Code will reload with the **spec-to-agents** folder open.
 4. When prompted with the workspace trust dialog, click **Yes, I trust the authors** to enable all features.
 
+Ah, that's a common issue! When you run `code . --reuse-window`, it launches VS Code asynchronously, which means your terminal continues immediately to the next command. However, you probably want to run `uv sync` **inside VS Code's integrated terminal** after it opens.
+
+### Install dependencies:
+
+> ⚠️ **In VS Code**: Open the integrated terminal (`` Ctrl+` `` or `Terminal > New Terminal`)
+
+```powershell
+# Install dependencies (enables IntelliSense and prepares local environment)
+uv sync
+```
+
 ---
-
 ## 4  Start Azure Resource Provisioning (Background Process)
-
 You'll use Azure Developer CLI (azd) to provision all necessary Azure resources. This process takes 5-10 minutes and runs in the background while you work on coding exercises.
 
 1. **Authenticate with Azure CLIs** (ensure you're in the *spec-to-agents* root directory):
-
+   
    First, authenticate with **azd**:
    
    **+++azd auth login+++**
@@ -161,19 +171,38 @@ You'll use Azure Developer CLI (azd) to provision all necessary Azure resources.
    - Temporary Access Pass: **+++@lab.CloudPortalCredential(User1).AccessToken+++**
    
    Authenticate in your browser, then close the tab and return to VS Code.
-
+   
    Next, authenticate with **Azure CLI**:
    
-   **+++az login --use-device-code+++**
+   **+++az login+++**
    
-   Follow the device code instructions: copy the device code, click the link, select the existing account, and click **Continue** when prompted:
+   A sign-in dialog will appear. Click **Work or school account**, then click **Continue**:
    
-   !IMAGE[3-az-cli-continue.png](instructions310255/3-az-cli-continue.png)
+   !IMAGE[azlogin-work-school.png](instructions310255/azlogin-work-school.png)
+   
 
-   Return to VSCode and click enter to select the default subscription
+> [!note]  You may need to minimize VS Code to see the sign-in window.   
+
+   
+   Sign in with your Azure credentials:
+   - Username: **+++@lab.CloudPortalCredential(User1).Username+++**  
+   - Temporary Access Pass: **+++@lab.CloudPortalCredential(User1).AccessToken+++**
+   
+   !IMAGE[azlogin-signinwithazure.png](instructions310255/azlogin-signinwithazure.png)
+   
+   When prompted about device registration, click **No, this app only**:
+   
+   !IMAGE[azcli-thisdevice.png](instructions310255/azcli-thisdevice.png)
+   
+   Return to VS Code terminal and press **Enter** to select the default subscription.
+   ---
+
+===
+
+## 4  Start Azure Resource Provisioning (Background Process) - continued.
 
 2. **Create azd Environment**:
-
+   
    **+++azd env new agents-lab-@lab.LabInstance.Id --subscription @lab.CloudSubscription.Id --location @lab.CloudResourceGroup(ResourceGroup1).Location+++**
 
 3. **Start Provisioning** (do not wait for completion):
@@ -282,7 +311,7 @@ src/spec_to_agents/
 4. **Uncomment and complete the agent creation code** by replacing the TODO section with:
 
 ```python
-# TODO: Exercise 1 - Create Venue Specialist agent with web search capability
+# Exercise 1 - Create Venue Specialist agent with web search capability
 
     # Initialize agent-specific tools
     agent_tools: list[ToolProtocol] = [web_search]
@@ -301,9 +330,9 @@ src/spec_to_agents/
     )
 ```
 
-> [!note] **Don't worry about `web_search` errors yet!**
+> [!note] **Don't worry about `web_search` yet!**
 > 
-> You'll see a red squiggle under `web_search` - that's expected! You'll implement this tool in Exercise 2. For now, just understand that it gives the agent web search capabilities.
+> You'll implement this tool in Exercise 2. For now, just understand that it gives the agent web search capabilities.
 
 > [!knowledge] **What You Just Learned**
 > 
@@ -345,7 +374,7 @@ This pattern (required tool + optional enhancement) is used across all specialis
 
 **Concept**: Tools in agent-framework are Python functions decorated with `@ai_function`. The LLM discovers and invokes these tools automatically when needed.
 
-!IMAGE[Agent Tools Final.png](instructions310255/Agent Tools Final.png){700}
+!IMAGE[Agent Tools.png](instructions310255/Agent Tools.png)
 
 > [!important] **Testing Still Comes Later**
 > 
@@ -361,7 +390,7 @@ This pattern (required tool + optional enhancement) is used across all specialis
 
 4. **Uncomment and complete the tool implementation**:
 ```python
-# TODO: Exercise 2 - Implement web search tool using HostedWebSearchTool
+# Exercise 2 - Implement web search tool using HostedWebSearchTool
 
     # Ensure conflicting environment variables are not set
     os.environ.pop("BING_CUSTOM_CONNECTION_NAME", None)
@@ -459,7 +488,7 @@ This layered approach separates concerns: your agent handles reasoning, the tool
 
 4. **Uncomment and complete the MCP tool creation**:
 ```python
-# TODO: Exercise 3 - Create MCP sequential thinking tool instance
+# Exercise 3 - Create MCP sequential thinking tool instance
 
     # Create MCP tool instance (not connected)
     sequential_thinking_tool = MCPStdioTool(
@@ -555,7 +584,7 @@ Framework connects MCP server on first agent.run()
 
 4. **Uncomment and complete the Pydantic model**:
 ```python
-# TODO: Exercise 4 - Define structured output fields for agent responses
+# Exercise 4 - Define structured output fields for agent responses
 
     summary: str = Field(description="Concise summary of this specialist's recommendations (max 200 words)")
     next_agent: Literal["venue", "budget", "catering", "logistics"] | None = Field(
@@ -711,7 +740,7 @@ This clean routing logic is only possible because of structured outputs - no tex
 
 4. **Uncomment and complete the workflow builder**:
 ```python
-# TODO: Exercise 5 - Build the event planning workflow with agent executors
+# Exercise 5 - Build the event planning workflow with agent executors
 
     # Create agents
     coordinator_agent = event_coordinator.create_agent()
@@ -886,7 +915,7 @@ The `azd provision` command (from Section 4) automatically configured everything
 2. **Verify `.env` file exists**
 
    ```powershell
-   Test-Path .env
+Test-Path .env
    ```
 
    Should output: `True`
@@ -900,7 +929,7 @@ The `azd provision` command (from Section 4) automatically configured everything
 
 > [!note] **If `.env` is missing**, run:
 > ```powershell
-> .\scripts\generate_env.ps1
+> .\scripts\generate-env.ps1
 > ```
 
 ---
@@ -915,10 +944,10 @@ Now let's see your agents in action!
 
 1. **Start the console application**:
    ```powershell
-   uv run console
+uv run console
    ```
 
-2. **Wait for the welcome screen** with agent descriptions:
+2. **Wait for the welcome screen**:
    
    ```
    ╭─────────────────────────────────────────────────────────────────────╮
@@ -926,98 +955,99 @@ Now let's see your agents in action!
    │              Interactive CLI with AI-Powered Agents                 │
    ╰─────────────────────────────────────────────────────────────────────╯
 
-   This workflow uses specialized AI agents to help you plan events:
-     • Venue Specialist - Researches and recommends venues
-     • Budget Analyst - Manages costs and financial planning
-     • Catering Coordinator - Handles food and beverage
-     • Logistics Manager - Coordinates schedules and resources
-
    ✓ Workflow loaded successfully
    ```
 
 3. **Enter your event request**:
    
    ```
-   Your request (or 1-3 for examples): Host an Ignite after party for 100 in SF downtown near Moscone Center on Nov 20th 2025 with a budget of $10k
+   Host an Ignite after party for 100 in SF downtown near Moscone Center on Nov 20th 2025 with a budget of $10k
    ```
 
-4. **Watch the workflow execute**. You'll see each agent work sequentially:
+4. **Watch the workflow execute**. Agents work collaboratively, sometimes iterating:
 
    ```
    ──────────────────────── venue ────────────────────────
-   {"summary":"Found The Mezzanine near Moscone Center, capacity 120, 
-   $2.5k rental...","next_agent":"budget",...}
+   [Tool: web_search for venues near Moscone]
+   {"summary":"Recommended LongHouse (83 Minna St), capacity 250, 
+   built-in bar, walkable from Moscone...","next_agent":"budget",...}
 
    ──────────────────────── budget ────────────────────────
-   {"summary":"Budget allocation: Venue $2.5k, Catering $5k, AV $1.5k, 
-   Contingency $1k...","next_agent":"catering",...}
+   {"summary":"Initial allocation: Venue $5k (50%), Catering $2.5k (25%), 
+   AV $800 (8%)...","next_agent":"catering",...}
 
    ──────────────────────── catering ────────────────────────
-   {"summary":"Cocktail reception with passed appetizers and open bar, 
-   $50/person...","next_agent":"logistics",...}
+   {"summary":"Quality catering needs $4k for passed appetizers + hosted bar. 
+   Current $2.5k insufficient...","next_agent":"budget",...}
+
+   ──────────────────────── budget ────────────────────────
+   {"summary":"Revised: Venue $3.5k (35%), Catering $4k (40%), 
+   AV $800, Rentals $700...","next_agent":"catering",...}
+
+   ──────────────────────── catering ────────────────────────
+   {"summary":"Plan fits $4k: Passed hors d'oeuvres, hot station, 
+   hosted beer/wine first hour...","next_agent":"logistics",...}
 
    ──────────────────────── logistics ────────────────────────
-   [Tool calls: create_calendar_event, get_weather_forecast]
-   {"summary":"Timeline: Setup 5pm, doors 7pm, event 7-10pm. Weather 
-   forecast: clear, 55°F...","next_agent":null,...}
+   [Tool: create_calendar_event]
+   [Tool: get_weather_forecast]
+   {"summary":"Timeline: Load-in 5:30pm, doors 8pm, event 8-11pm. 
+   Calendar confirmed...","next_agent":null,...}
    ```
 
-5. **Review the final event plan**:
+5. **Review the final event plan** - synthesized from all agent outputs:
    
    ```
    ──────────────────── Final Event Plan ────────────────────
 
    ╭──────────────────── Event Plan Summary ─────────────────╮
-   │                                                          │
-   │  Executive Summary                                       │
-   │  Ignite after party for 100 guests at The Mezzanine,    │
-   │  SF downtown near Moscone Center, Nov 20th 2025.        │
-   │                                                          │
-   │  Venue: The Mezzanine ($2.5k)                           │
-   │  Budget: $10k total allocated                           │
-   │  Catering: Cocktail reception with open bar             │
-   │  Logistics: 7-10pm, weather clear, calendar confirmed   │
-   │                                                          │
-   ╰──────────────────────────────────────────────────────────╯
+   │  Ignite after party for 100 guests, Nov 20, 2025       │
+   │  LongHouse (83 Minna St), near Moscone Center          │
+   │                                                         │
+   │  Budget: $10k (Venue $3.5k, Catering $4k, AV/Rentals)  │
+   │  Menu: Passed appetizers, hot station, hosted bar      │
+   │  Timeline: 8-11pm, calendar confirmed                  │
+   ╰─────────────────────────────────────────────────────────╯
 
    ✓ Event planning complete!
    ```
 
 > [!knowledge] **What Just Happened?**
 > 
-> **Workflow Execution**:
-> 1. **Venue Specialist** → Searched SF venues near Moscone, selected The Mezzanine, routed to `budget`
-> 2. **Budget Analyst** → Allocated $10k budget, routed to `catering`
-> 3. **Catering Coordinator** → Designed cocktail menu, routed to `logistics`
-> 4. **Logistics Manager** → Created timeline, checked weather, confirmed calendar, returned `next_agent=null`
-> 5. **Event Coordinator** → Synthesized final plan
+> **Dynamic Workflow**:
+> - **Venue** searched web → recommended LongHouse
+> - **Budget** allocated $10k → sent to catering
+> - **Catering** found allocation insufficient → routed back to budget
+> - **Budget** reallocated funds → sent revised plan to catering
+> - **Catering** approved revised budget → sent to logistics
+> - **Logistics** created timeline + calendar → completed workflow
 > 
-> **Key Features**:
-> - **Structured routing**: Each agent's `next_agent` field drove the workflow path
-> - **Autonomous tool use**: Agents decided when to call tools (web search, calendar, weather)
-> - **Service-managed threads**: Each agent automatically remembered prior context
-> - **No human input needed**: Workflow ran autonomously with complete constraints
+> **Key Observations**:
+> - **Non-linear routing**: Agents can route back to previous agents when needed
+> - **Autonomous negotiation**: Budget and catering iterated to find optimal allocation
+> - **Tool invocation**: Venue used web search, logistics used calendar/weather
+> - **Service-managed threads**: Each agent remembered full conversation context
 
 ---
 ===
 
-## 13. BONUS: Visualize with DevUI
+## 13. Visualize with DevUI
 
 Run the workflow with a visual interface for debugging and exploration.
 
 1. **Start DevUI** (from repository root):
    ```powershell
-   uv run app
+uv run app
    ```
    Browser opens at `http://localhost:8080`
 
 2. **Run the Workflow**:
-   - Select **"Event Planning Workflow"** from the top dropdown
    - Click **"Configure & Run"**
    - Enter your prompt: `Plan a corporate holiday party for 50 people, budget $5000`
-   - Click **"Run Workflow"**
+   - Click **"Run Workflow"** and respond to any user inputs (elicitations)
 
    !IMAGE[devui-run-workflow.png](instructions310255/devui-run-workflow.png){700}
+   !IMAGE[devui-1-user-elicitation.png](instructions310255/devui-1-user-elicitation.png){700}
 
 3. **Watch Execution**:
    - **Graph**: Nodes light up green as agents execute
@@ -1025,14 +1055,18 @@ Run the workflow with a visual interface for debugging and exploration.
    - **Traces Tab**: Execution duration and routing decisions
    - **Tools Tab**: Tool calls (like `web_search`) with arguments and results
 
-   !IMAGE[devui-execution.png](instructions310255/devui-execution.png){900}
+   !IMAGE[devui-3-finish-run.png](instructions310255/devui-3-finish-run.png){700}
+   !IMAGE[tool-calls-devui.png](instructions310255/tool-calls-devui.png){300}
 
-4. **Run the Agents**
+4. **Run the Agents** (Optional)
    - Select **"VenueSpecialist"** from the top dropdown
    - Click the text box at the bottom of the page
    - Enter your prompt: `Plan a corporate holiday party for 50 people, budget $5000`
+   - Respond to any user elicitation requests
    - Click the **Tools** tab on the right hand side of the screen
    - Inspect the call to the **web_search** tool
+
+   !IMAGE[devui-agent.png](instructions310255/devui-agent.png){600}
 
 > [!knowledge] **DevUI vs Console**
 > 
@@ -1042,8 +1076,470 @@ Run the workflow with a visual interface for debugging and exploration.
 
 
 ---
+
 ===
-## 14. BONUS: Explore Supervisor Pattern (Alternative Branch)
+
+
+## 14. Explore Observability in Azure AI Foundry
+
+See how Azure AI Foundry provides enterprise observability for your multi-agent system.
+
+### Access Azure AI Foundry
+
+1. **Navigate to** +++**https://ai.azure.com**+++ and click **Sign in**
+
+2. **Authenticate** with your credentials (or use existing signed-in account):
+   - Username: +++**@lab.CloudPortalCredential(User1).Username**+++
+   - Temporary Access Pass: +++**@lab.CloudPortalCredential(User1).AccessToken**+++
+
+3. **Select your project** (there will be only one):
+
+   !IMAGE[aif-select-project.png](instructions310255/aif-select-project.png){300}
+
+---
+
+### View Distributed Tracing
+
+1. **Navigate to** **Tracing** under "Observe and optimize" in the left navigation
+
+2. **Click "Manage data source"** and connect to Application Insights (only one option available)
+
+3. **View workflow runs** - each **workflow.run** entry shows a complete event planning execution:
+
+   !IMAGE[tracing-workflow-run.png](instructions310255/tracing-workflow-run.png){300}
+
+4. **Click any workflow.run** to see the distributed trace:
+   - Hierarchical view of all agents (venue, budget, catering, logistics)
+   - Tool calls (web_search, sequentialthinking)
+   - Expand nodes to see timing, token usage, and input/output data
+
+   !IMAGE[tracing-explore.png](instructions310255/tracing-explore.png){500}
+
+> [!knowledge] **Distributed Tracing Benefits**
+> 
+> - Track requests across all agents and tools
+> - Identify performance bottlenecks
+> - Debug failures with complete execution context
+> - Monitor token usage and costs
+
+---
+
+### Inspect Agent Configurations
+
+1. **Navigate to** **Agents** under "Build" in the left navigation
+
+2. **Click "event_coordinator"** to view:
+   - System instructions matching your local code
+   - Configured tools (web_search, sequentialthinking)
+   - Model deployment (gpt-5-mini)
+
+   !IMAGE[agents-event-coordinator.png](instructions310255/agents-event-coordinator.png){300}
+
+3. **Explore Threads** to see conversation history from your console runs
+
+---
+
+### Use VS Code Extension
+
+1. **Click the Azure AI Foundry icon** in VS Code's left sidebar (bottom icon):
+
+   !IMAGE[aif-vsc-extension.png](instructions310255/aif-vsc-extension.png){200}
+
+2. **Sign in to Azure** (if prompted) using the same credentials
+
+3. **Expand "RESOURCES"** to explore:
+   - **Models**: Deployed models and settings
+   - **Agents**: All agents with quick access
+   - **Threads**: Recent conversation threads
+
+> [!knowledge] **Observability Layers**
+> 
+> - **Tracing**: HOW the workflow executed (timing, routing, failures)
+> - **Agents**: WHAT each component does (instructions, tools)
+> - **Threads**: Conversation history and state
+
+---
+
+===
+## 15. BONUS: Implement Entertainment Agent with Spec-Kit
+
+In this bonus exercise, you'll use **spec-kit** - a specification-driven development toolkit - to implement a new Entertainment Agent using GitHub Copilot. Instead of coding from scratch, you'll use pre-defined specifications and let Copilot implement the feature.
+
+### What is Spec-Kit?
+
+Spec-kit flips traditional development: **specifications become executable**. You define WHAT you want (requirements), HOW to build it (plan), and WHAT steps to take (tasks), then let AI agents implement the code.
+
+**Traditional Approach**:
+```
+Write code → Test → Debug → Refactor → Document
+```
+
+**Spec-Kit Approach**:
+```
+Constitution (principles) → Specify (what) → Plan (how) → Tasks (steps) → Implement (AI does it)
+```
+
+For this lab, we've **pre-populated** all specifications. You'll focus on the implementation workflow.
+
+---
+
+### Step 1: Review Pre-Populated Specifications
+
+The `.specify/` directory contains all the specifications for the Entertainment Agent feature:
+
+1. **Open** `.specify/memory/constitution.md`
+   - Project principles and coding standards
+   - These guide ALL implementation decisions
+
+2. **Open** `.specify/specs/002-entertainment-agent/spec.md`
+   - Feature requirements and user stories
+   - Defines WHAT the Entertainment Agent does
+
+3. **Open** `.specify/specs/002-entertainment-agent/plan.md`
+   - Technical architecture and patterns
+   - Defines HOW to implement the agent
+
+4. **Open** `.specify/specs/002-entertainment-agent/tasks.md`
+   - Sequential implementation steps
+   - What Copilot will execute
+
+> [!knowledge] **Key Insight**
+> 
+> Notice the separation of concerns:
+> - **Constitution**: Principles (never changes)
+> - **Spec**: Requirements (WHAT and WHY)
+> - **Plan**: Architecture (HOW)
+> - **Tasks**: Actions (EXECUTE)
+
+---
+
+### Step 2: Switch to Claude Sonnet 4.5
+
+For optimal spec-kit performance, use the Claude Sonnet 4.5 model:
+
+1. **Click** the GitHub Copilot icon in VS Code (bottom right)
+
+2. **Select** model dropdown (currently shows your active model)
+
+3. **Choose** `Claude Sonnet 4.5` from the list
+
+---
+
+### Step 3: Start Spec-Kit Implementation
+
+Now you'll trigger Copilot to implement all tasks:
+
+1. **Open GitHub Copilot Chat** (Ctrl+Shift+I or click Copilot icon)
+
+2. **Type** the spec-kit command:
+   ```
+/speckit.implement implement Tasks
+   ```
+!IMAGE[speckit-impl.png](instructions310255/speckit-impl.png)
+
+3. **Press Enter** - Copilot will start reading the tasks.md file
+
+4. **Watch the initial analysis** - Copilot will:
+   - Read tasks.md
+   - Identify 14 tasks to complete
+   - Show a summary of files to create/modify
+
+!IMAGE[speckit-read-files.png](instructions310255/speckit-read-files.png){500}
+
+---
+
+### Step 4: Approve Copilot Requests
+
+As Copilot implements tasks, it will request permission to modify files:
+
+1. **Copilot shows proposed changes**:
+   - File path and change preview
+   - Type of change (create, modify, delete)
+
+2. **Review the change** (quick scan is fine)
+
+3. **Click "Accept"** or press **Ctrl+Enter**
+
+4. **Repeat** for each task
+
+
+> [!tip] **Approval Tips**
+> 
+> - **First approval** (Task 0.1): Updates `models/messages.py` - CRITICAL for routing
+> - **Most approvals**: Creating new files - safe to accept
+> - **If uncertain**: Check the file diff before approving
+
+**Expected approvals** (14 total):
+- Task 0.1: Modify `models/messages.py` ✅ CRITICAL FIRST
+- Task 1.1: Create `prompts/entertainment_specialist.py`
+- Task 1.2: Create `agents/entertainment_specialist.py`
+- Task 1.3: Modify `workflow/executors.py`
+- Task 1.4: Modify `workflow/builder.py`
+- Task 2.1: Modify `prompts/logistics_manager.py`
+- Task 2.2: Modify `prompts/event_coordinator.py`
+- Task 3.1: Create `tests/functional/test_entertainment_agent.py`
+- ... (Copilot may combine some changes)
+
+---
+
+### Step 5: Learn About Spec-Kit (While Copilot Works)
+
+While Copilot implements the tasks (~5-10 minutes), let's understand what's happening:
+
+#### **How Spec-Kit Works**
+
+**1. Constitution** (`.specify/memory/constitution.md`)
+- Defines project principles: "Use dependency injection", "Follow framework patterns"
+- Copilot references these when making decisions
+- Ensures consistency across all features
+
+**2. Specification** (`.specify/specs/002-entertainment-agent/spec.md`)
+- **User Stories**: What the feature should do
+  - US-1: Research entertainment options
+  - US-2: Coordinate with other agents
+  - US-3: Output structured recommendations
+- **Requirements**: Functional and non-functional constraints
+- **Success Metrics**: How to know it works
+
+**3. Plan** (`.specify/specs/002-entertainment-agent/plan.md`)
+- **Architecture**: Which files to create/modify
+- **Patterns**: Code examples to follow
+- **Integration**: How to connect to existing workflow
+- **Testing Strategy**: How to validate
+
+**4. Tasks** (`.specify/specs/002-entertainment-agent/tasks.md`)
+- **Sequential Steps**: Task 0.1 → 1.1 → 1.2 → ... → 3.4
+- **Dependencies**: Which tasks must complete before others
+- **Acceptance Criteria**: How to verify each task
+- **File Paths**: Exact locations for implementation
+
+#### **Why This Approach?**
+
+Traditional coding:
+```
+Developer writes code → Trial and error → Fix bugs → Refactor → Document
+```
+
+Spec-kit approach:
+```
+Specifications written → AI implements → Tests validate → Production-ready code
+```
+
+**Benefits**:
+- ✅ **Consistency**: All code follows same patterns
+- ✅ **Speed**: AI implements faster than manual coding
+- ✅ **Quality**: Guided by project principles
+- ✅ **Documentation**: Specs serve as documentation
+- ✅ **Onboarding**: New team members read specs to understand system
+
+#### **What's Being Implemented?**
+
+The **Entertainment Agent** will:
+1. **Research entertainment options** using web search
+2. **Respect budget allocation** from Budget Agent
+3. **Validate venue capabilities** (stage, A/V equipment)
+4. **Coordinate timing** with Logistics Agent
+5. **Return structured recommendations** to Event Coordinator
+
+This demonstrates the complete agent-framework pattern you learned in Exercises 1-12.
+
+---
+
+### Step 6: Verify Implementation Complete
+
+After Copilot finishes (~10 minutes), verify all changes:
+
+1. **Check Copilot's summary** - should show:
+   ```
+   ✅ Task 0.1: Updated SpecialistOutput model
+   ✅ Task 1.1: Created system prompt
+   ✅ Task 1.2: Created agent module
+   ✅ Task 1.3: Added executor class
+   ✅ Task 1.4: Integrated into workflow
+   ✅ Task 2.1: Updated logistics routing
+   ✅ Task 2.2: Updated coordinator synthesis
+   ✅ Task 3.1: Created functional tests
+   ```
+
+2. **Verify files created**:
+   ```powershell
+   # Check new files exist
+   Test-Path src/spec_to_agents/agents/entertainment_specialist.py
+   Test-Path src/spec_to_agents/prompts/entertainment_specialist.py
+   Test-Path tests/functional/test_entertainment_agent.py
+   ```
+   All should return `True`
+
+3. **Check for errors** in Copilot output:
+   - ✅ No red error messages
+   - ✅ All tasks marked complete
+   - ✅ No unresolved conflicts
+
+!IMAGE[spec-kit-impl-done.png](instructions310255/spec-kit-impl-done.png){500}
+
+---
+
+### Step 7: Test in Console Mode
+
+Now test the complete workflow with the new Entertainment Agent:
+
+1. **Start console mode**:
+   ```powershell
+   uv run console
+   ```
+
+2. **Select example 1** (or press `1` and Enter):
+   ```
+   Plan a corporate holiday party for 50 people, budget $5000
+   ```
+
+3. **When prompted for location**, type:
+   ```
+   Seattle
+   ```
+
+4. **Watch the workflow execute** through all agents:
+   ```
+   ─────── venue ───────
+   [Venue Specialist researches venues...]
+   Recommended: The Foundry Seattle
+   
+   ─────── budget ───────
+   [Budget Analyst allocates funds...]
+   Allocation: Venue $2,500, Catering $1,400, Entertainment $500...
+   
+   ─────── catering ───────
+   [Catering Coordinator plans menu...]
+   
+   ─────── logistics ───────
+   [Logistics Manager creates timeline...]
+   
+   ─────── entertainment ───────  ← NEW AGENT!
+   [Entertainment Specialist searches options...]
+   Recommended: Local jazz band ($400), DJ ($350), Trivia host ($250)
+   
+   ─────── coordinator ───────
+   [Event Coordinator synthesizes final plan...]
+   ```
+
+5. **Verify Entertainment section in final plan**:
+   - Entertainment recommendations with costs
+   - Timing coordination with event schedule
+   - Budget compliance ($500 allocated)
+
+!IMAGE[speckit-enter-1.png](instructions310255/speckit-enter-1.png)
+
+!IMAGE[speckit-enter-2.png](instructions310255/speckit-enter-2.png)
+
+> [!knowledge] **What Just Happened?**
+> 
+> The workflow now follows this path:
+> ```
+> User → Coordinator → Venue → Budget → Catering → Logistics → Entertainment → Coordinator
+> ```
+> 
+> The Entertainment Agent:
+> 1. Received context from previous agents (budget, venue, timing)
+> 2. Used web_search tool to find options
+> 3. Returned structured output with `next_agent=None`
+> 4. Coordinator synthesized all results including entertainment
+
+---
+
+### Step 8: Test in DevUI
+
+Finally, verify the Entertainment Agent appears in the visual workflow:
+
+1. **Start DevUI** (in a new terminal):
+   ```powershell
+   # In a new PowerShell terminal
+   cd C:\Users\LabUser\code\spec-to-agents
+   uv run app
+   ```
+
+2. **Open browser** to the DevUI URL (shown in terminal):
+   ```
+   http://localhost:8080
+   ```
+
+3. **Submit the same test prompt**:
+   ```
+   Plan a corporate holiday party for 50 people in Seattle, budget $5000
+   ```
+
+4. **Watch the workflow visualization**:
+   - **Graph View**: Entertainment Specialist node appears
+   - **Execution Trace**: Shows entertainment processing step
+   - **Output Panel**: Displays entertainment recommendations
+
+5. **Explore the Entertainment Agent**:
+   - Click the **Entertainment Specialist** node in graph
+   - View agent details:
+     - System instructions
+     - Available tools (web_search, sequential-thinking)
+     - Response format (SpecialistOutput)
+
+!IMAGE[speckit-enter-devui.png](instructions310255/speckit-enter-devui.png)
+
+---
+
+### Step 9: Reflection - What Did Spec-Kit Enable?
+
+Let's discuss what just happened:
+
+#### **Compare: Traditional vs Spec-Kit**
+
+**If you coded this manually**:
+- ⏱️ 60-90 minutes to implement
+- 🐛 Trial and error with routing logic
+- 📝 Manual pattern matching from existing agents
+- 🧪 Writing tests from scratch
+- 🔍 Debugging integration issues
+
+**With spec-kit**:
+- ⏱️ 10 minutes to review specs + approve changes
+- ✅ Patterns guaranteed to match existing code
+- ✅ Tests automatically generated
+- ✅ Integration tested via structured outputs
+- ✅ Documentation created alongside code
+
+#### **Key Learnings**
+
+1. **Specifications Drive Development**
+   - Constitution defines HOW to code (principles)
+   - Spec defines WHAT to build (requirements)
+   - Plan defines WHERE and HOW (architecture)
+   - Tasks define WHEN (sequence)
+
+2. **AI Implements Patterns**
+   - Copilot followed existing agent patterns exactly
+   - Dependency injection used correctly
+   - Structured outputs enforced
+   - Tests matched existing test structure
+
+3. **Type Safety Catches Errors**
+   - Task 0.1 updated `SpecialistOutput` model first
+   - Without it, runtime would fail with validation error
+   - Pydantic ensures correct routing
+
+4. **Workflow Extension is Repeatable**
+   - Want to add Risk Management Agent? Follow same process
+   - Want to add Marketing Agent? Same specifications approach
+   - Patterns are documented and reproducible
+
+#### **Discussion Questions**
+
+- How would you add a sixth agent (e.g., Marketing Specialist)?
+- What would Task 0.1 need to include for a new agent?
+- When would you use spec-kit vs manual coding?
+- How does constitution.md ensure code quality?
+
+
+
+---
+
+===
+## 16. BONUS: Explore Supervisor Pattern (Alternative Branch)
 
 The main branch uses a **star topology** where a coordinator routes between specialists. There's an alternative **supervisor pattern** available on a different branch.
 
@@ -1089,7 +1585,7 @@ The main branch uses a **star topology** where a coordinator routes between spec
 ---
 ===
 
-## 15. Understanding What You Built
+## 17. Understanding What You Built
 
 Let's recap the key agent-framework concepts you've learned:
 
@@ -1143,6 +1639,18 @@ class MyOutput(BaseModel):
     next_agent: str | None
 ```
 
+### **Advanced Patterns (Bonus Section 14)**
+
+**5. Spec-Driven Development**:
+```
+Constitution → Specification → Plan → Tasks → /speckit.implement
+```
+
+**6. Type-Safe Routing**:
+```python
+next_agent: Literal["venue", "budget", "catering", "logistics", "entertainment"] | None
+```
+
 ### **Why Agent Framework?**
 
 - **Enterprise-Ready**: Built on proven Semantic Kernel infrastructure
@@ -1151,11 +1659,12 @@ class MyOutput(BaseModel):
 - **Observability**: Built-in tracing and monitoring
 - **Type Safety**: Pydantic models and Python type hints
 - **Flexible**: Supports both orchestrated and autonomous patterns
+- **Extensible**: Spec-kit enables rapid feature development
 
 ---
 ===
 
-## 16. Deploy to Azure
+## 18. Deploy to Azure
 
 Now let's deploy your workflow to Azure!
 
@@ -1182,7 +1691,7 @@ Now let's deploy your workflow to Azure!
 ---
 ===
 
-## 17. Explore Azure AI Foundry
+## 19. Explore Azure AI Foundry
 
 Your agents are also running in Azure AI Foundry!
 
@@ -1196,7 +1705,7 @@ Your agents are also running in Azure AI Foundry!
 
 4. **View Deployed Agents**:
    - Left navigation → **Build** → **Agents**
-   - You'll see all 5 specialist agents listed
+   - You'll see all 5 specialist agents listed (or 6 if you completed Section 14!)
    - Click any agent to view:
      - System instructions
      - Configured tools
@@ -1230,7 +1739,7 @@ Your agents are also running in Azure AI Foundry!
 ---
 ===
 
-## 18. Clean-Up
+## 20. Clean-Up
 
 > [!alert] **Important: Remove Azure Resources**
 > 
@@ -1276,6 +1785,12 @@ You've successfully built and deployed a production-ready multi-agent system! He
   - Monitored with Application Insights
   - Visualized with DevUI
 
+- **Bonus: Spec-Driven Development** (Section 14):
+  - Used spec-kit to implement Entertainment Agent
+  - Followed specification-driven workflow
+  - Extended multi-agent system with new capability
+  - Applied type-safe routing patterns
+
 ### **🎯 Key Takeaways**
 
 1. **Agents are composable**: Instructions + Tools + Response Format
@@ -1283,12 +1798,13 @@ You've successfully built and deployed a production-ready multi-agent system! He
 3. **Workflows orchestrate**: Edges define communication paths
 4. **Structured outputs**: Enable reliable routing and parsing
 5. **Azure integration**: Enterprise-scale deployment with monitoring
+6. **Spec-kit accelerates**: AI implements from specifications
 
 ### **🚀 Next Steps**
 
 Continue your agent-framework journey:
 
-- **Add more agents**: Create a Marketing Specialist or Transportation Coordinator
+- **Add more agents**: Create a Marketing Specialist or Risk Management Agent using spec-kit
 - **Custom MCP tools**: Build domain-specific tool servers
 - **Advanced workflows**: Implement conditional branching and loops
 - **Production features**: Add authentication, rate limiting, cost tracking
@@ -1298,5 +1814,6 @@ Continue your agent-framework journey:
 - **Agent Framework**: [github.com/microsoft/agent-framework](https://github.com/microsoft/agent-framework)
 - **Azure AI Foundry**: [ai.azure.com](https://ai.azure.com)
 - **MCP Protocol**: [modelcontextprotocol.io](https://modelcontextprotocol.io)
+- **Spec-Kit**: [github.com/spec-kit](https://github.com/spec-kit)
 
 **Happy coding at Microsoft Ignite 2025!**
