@@ -8,9 +8,9 @@ You'll create specialized AI agents that collaborate to plan comprehensive event
 
 - **Build Multi-Agent Workflows**: Orchestrate multiple specialized agents (Event Coordinator, Venue Specialist, Budget Analyst, Catering Coordinator, and Logistics Manager) that work together through workflow edges and message passing. The framework supports **Agent-to-Agent (A2A) communication** for direct inter-agent messaging and **Model Context Protocol (MCP)** for integrating external tools like weather forecasting and calendar management.
 
-- **Deploy to Azure AI Foundry**: Run your agent-framework workflows in Azure AI Foundry, where agents are automatically registered and managed with full enterprise-grade capabilities, security, and observability.
+- **Deploy to Microsoft Foundry**: Run your agent-framework workflows in Microsoft Foundry, where agents are automatically registered and managed with full enterprise-grade capabilities, security, and observability.
 
-- **Visualize with DevUI and Azure AI Foundry**: Monitor real-time agent interactions, workflow execution graphs, and message flows through interactive interfaces both locally (DevUI) and in the cloud (Azure AI Foundry).
+- **Visualize with DevUI and Microsoft Foundry**: Monitor real-time agent interactions, workflow execution graphs, and message flows through interactive interfaces both locally (DevUI) and in the cloud (Microsoft Foundry).
 
 The system demonstrates concurrent workflow execution patterns where agents work in sequence and in parallel, exchange information through the workflow, invoke MCP tools for specialized capabilities, and synthesize comprehensive event plans. You'll also implement **human-in-the-loop** capabilities, allowing user input and approval at critical decision points during agent execution.
 
@@ -145,22 +145,30 @@ code . --reuse-window
 3. VS Code will reload with the **spec-to-agents** folder open.
 4. When prompted with the workspace trust dialog, click **Yes, I trust the authors** to enable all features.
 
-Ah, that's a common issue! When you run `code . --reuse-window`, it launches VS Code asynchronously, which means your terminal continues immediately to the next command. However, you probably want to run `uv sync` **inside VS Code's integrated terminal** after it opens.
-
 ### Install dependencies:
 
-> ⚠️ **In VS Code**: Open the integrated terminal (`` Ctrl+` `` or `Terminal > New Terminal`)
+> ⚠️ **In VS Code**: Open the integrated terminal (*Ctrl+* or `Terminal > New Terminal`)
 
 ```powershell
 # Install dependencies (enables IntelliSense and prepares local environment)
 uv sync
 ```
 
+> [!hint] **Save Time: Start Azure Authentication in Parallel**
+> 
+> While `uv sync` is running, open a **new terminal** (*Terminal → New Terminal* or click the **+** icon) and proceed to Section 4 to authenticate with Azure. This lets both processes run simultaneously!
+
 ---
 ## 4  Start Azure Resource Provisioning (Background Process)
 You'll use Azure Developer CLI (azd) to provision all necessary Azure resources. This process takes 5-10 minutes and runs in the background while you work on coding exercises.
 
-1. **Authenticate with Azure CLIs** (ensure you're in the *spec-to-agents* root directory):
+> [!note] **Parallel Execution**
+> 
+> If `uv sync` is still running from Section 3, that's fine! Open a new terminal for these commands so both can run in parallel.
+
+1. **Open a new terminal** in VS Code (*Terminal → New Terminal* or click the **+** icon)
+
+2. **Authenticate with Azure CLIs** (ensure you're in the *spec-to-agents* root directory):
    
    First, authenticate with **azd**:
    
@@ -214,7 +222,7 @@ You'll use Azure Developer CLI (azd) to provision all necessary Azure resources.
 > This creates the following Azure resources:
 > 
 > **AI Platform:**
-> - **Azure AI Foundry Project** - Project workspace for your event planning agents
+> - **Microsoft Foundry Project** - Project workspace for your event planning agents
 > - **Model Deployments** - Two Azure OpenAI models deployed:
 >   - *gpt-5-mini* (primary agent tasks)
 >   - *gpt-4.1-mini* (web search capabilities)
@@ -304,7 +312,7 @@ src/spec_to_agents/
 
 1. **Open** `src/spec_to_agents/agents/venue_specialist.py`
 
-2. **Locate** the `# TODO: Exercise 1` comment (around line 42)
+2. **Locate** the `# TODO: Exercise 1` comment (around line 48)
 
 3. **Delete the `pass` statement**
 
@@ -355,16 +363,16 @@ src/spec_to_agents/
 > 3. **Dynamic Tool Loading**: Code checks if MCP tool exists (`global_tools.get("sequential-thinking")`) before adding. Makes agent work in different environments.
 > 
 > 4. **Structured Output**: `SpecialistOutput` ensures predictable JSON with `summary`, `next_agent`, `user_input_needed` fields for reliable workflow routing.
-
-### Understanding Agent Tools
-
-Your venue specialist starts with **one required tool**:
-- `web_search`: Custom `@ai_function` for Bing-powered web search (Exercise 2)
-
-Then **conditionally adds** an optional tool:
-- `sequential-thinking`: MCP tool for advanced reasoning (if available)
-
-This pattern (required tool + optional enhancement) is used across all specialist agents in the workflow.
+> 
+> ### Understanding Agent Tools
+> 
+> Your venue specialist starts with **one required tool**:
+> - `web_search`: Custom `@ai_function` for Bing-powered web search (Exercise 2)
+> 
+> Then **conditionally adds** an optional tool:
+> - `sequential-thinking`: MCP tool for advanced reasoning (if available)
+> 
+> This pattern (required tool + optional enhancement) is used across all specialist agents in the workflow.
 
 ---
 
@@ -384,7 +392,7 @@ This pattern (required tool + optional enhancement) is used across all specialis
 
 1. **Open** `src/spec_to_agents/tools/bing_search.py`
 
-2. **Locate** the `# TODO: Exercise 2` comment (around line 36)
+2. **Locate** the `# TODO: Exercise 2` comment (around line 40)
 
 3. **Delete the `pass` statement**
 
@@ -444,7 +452,7 @@ This pattern (required tool + optional enhancement) is used across all specialis
 > - Built-in error handling and result formatting
 > 
 > **Environment Variable Cleanup**:
-> The code removes `BING_CUSTOM_CONNECTION_NAME` and `BING_CUSTOM_INSTANCE_NAME` to ensure the tool uses the default Bing connection configured in Azure AI Foundry, preventing conflicts with custom search configurations.
+> The code removes `BING_CUSTOM_CONNECTION_NAME` and `BING_CUSTOM_INSTANCE_NAME` to ensure the tool uses the default Bing connection configured in Microsoft Foundry, preventing conflicts with custom search configurations.
 > 
 > **When is this called?**: 
 > When the Venue Specialist (or any agent with this tool) needs venue information, the LLM will automatically invoke:
@@ -452,25 +460,25 @@ This pattern (required tool + optional enhancement) is used across all specialis
 > web_search("event venues in Seattle for 50 people under $3000")
 > ```
 > The LLM decides when to call based on the user's request and the tool's description.
-
-### Understanding the Data Flow
-```
-User Request: "Find venues in Seattle"
-    ↓
-Venue Specialist Agent (detects need for web search)
-    ↓
-Calls: web_search("event venues Seattle")
-    ↓
-Creates temporary bing_web_search_agent
-    ↓
-Invokes: HostedWebSearchTool (Azure Bing API)
-    ↓
-Returns: Formatted search results
-    ↓
-Venue Specialist analyzes results and responds to user
-```
-
-This layered approach separates concerns: your agent handles reasoning, the tool handles execution, and the temporary agent handles Bing API interaction.
+> 
+> ### Understanding the Data Flow
+> ```
+> User Request: "Find venues in Seattle"
+>     ↓
+> Venue Specialist Agent (detects need for web search)
+>     ↓
+> Calls: web_search("event venues Seattle")
+>     ↓
+> Creates temporary bing_web_search_agent
+>     ↓
+> Invokes: HostedWebSearchTool (Azure Bing API)
+>     ↓
+> Returns: Formatted search results
+>     ↓
+> Venue Specialist analyzes results and responds to user
+> ```
+> 
+> This layered approach separates concerns: your agent handles reasoning, the tool handles execution, and the temporary agent handles Bing API interaction.
 
 ===
 
@@ -482,7 +490,7 @@ This layered approach separates concerns: your agent handles reasoning, the tool
 
 1. **Open** `src/spec_to_agents/tools/mcp_tools.py`
 
-2. **Locate** the `# TODO: Exercise 3` comment (around line 47)
+2. **Locate** the `# TODO: Exercise 3` comment (around line 43)
 
 3. **Delete the `pass` statement**
 
@@ -544,27 +552,27 @@ This layered approach separates concerns: your agent handles reasoning, the tool
 > - **MCPStdioTool**: Uses stdio (standard input/output) - what we're using
 > - **MCPStreamableHTTPTool**: Uses HTTP/SSE for streaming responses
 > - **MCPWebsocketTool**: Uses WebSockets for bidirectional communication
-
-### Understanding the Architecture
-```
-Dependency Injection Container (container.py)
-    ↓
-global_tools = Singleton(create_mcp_tool_instances)
-    ↓
-Returns: {"sequential-thinking": MCPStdioTool(...)}
-    ↓
-Injected into: All agent create_agent() functions
-    ↓
-if global_tools.get("sequential-thinking"):
-    agent_tools.append(global_tools["sequential-thinking"])
-    ↓
-Framework connects MCP server on first agent.run()
-```
-
-**Key Insight**: This pattern (create → inject → lazy connect) means:
-- No overhead if agents don't use the tool
-- Automatic cleanup prevents resource leaks
-- Shared tool instance across all agents (efficient)
+> 
+> ### Understanding the Architecture
+> ```
+> Dependency Injection Container (container.py)
+>     ↓
+> global_tools = Singleton(create_mcp_tool_instances)
+>     ↓
+> Returns: {"sequential-thinking": MCPStdioTool(...)}
+>     ↓
+> Injected into: All agent create_agent() functions
+>     ↓
+> if global_tools.get("sequential-thinking"):
+>     agent_tools.append(global_tools["sequential-thinking"])
+>     ↓
+> Framework connects MCP server on first agent.run()
+> ```
+> 
+> **Key Insight**: This pattern (create → inject → lazy connect) means:
+> - No overhead if agents don't use the tool
+> - Automatic cleanup prevents resource leaks
+> - Shared tool instance across all agents (efficient)
 
 ---
 
@@ -578,7 +586,7 @@ Framework connects MCP server on first agent.run()
 
 1. **Open** `src/spec_to_agents/models/messages.py`
 
-2. **Locate** the `# TODO: Exercise 4` comment (around line 66)
+2. **Locate** the `# TODO: Exercise 4` comment (around line 76)
 
 3. **Delete the `pass` statement**
 
@@ -668,59 +676,60 @@ Framework connects MCP server on first agent.run()
 > else:
 >     # Workflow complete
 > ```
-
-### Example Responses
-
-**Autonomous routing** (agent proceeds to next specialist):
-```json
-{
-  "summary": "Researched 3 venues: The Foundry ($2k, 60 capacity, modern downtown), Pioneer Square Hall ($1.5k, 50 capacity, historic), Fremont Studios ($3k, 80 capacity, industrial). Recommended The Foundry for best balance of location, capacity, and budget.",
-  "next_agent": "budget",
-  "user_input_needed": false,
-  "user_prompt": null
-}
-```
-
-**Request user input** (agent needs clarification):
-```json
-{
-  "summary": "Found 3 excellent venue options with different tradeoffs in price, location, and ambiance. Each meets your capacity requirement of 50 people.",
-  "next_agent": null,
-  "user_input_needed": true,
-  "user_prompt": "Which venue style appeals to you: The Foundry (modern, $2k), Pioneer Square Hall (historic, $1.5k), or Fremont Studios (industrial, $3k)?"
-}
-```
-
-**Workflow complete** (final specialist finished):
-```json
-{
-  "summary": "Created comprehensive event timeline: setup 2-5pm, doors 6pm, reception 6:30pm, dinner 7pm, program 8pm, close 10pm. Weather forecast clear, all vendor coordination confirmed, calendar events created.",
-  "next_agent": null,
-  "user_input_needed": false,
-  "user_prompt": null
-}
-```
-
-### Understanding the Routing Logic
-
-The coordinator uses this pattern (in `workflow/executors.py`):
-```python
-specialist_output = parse_specialist_output(response)
-
-if specialist_output.user_input_needed:
-    # Pause workflow and request human input via DevUI
-    await ctx.request_info(...)
-    
-elif specialist_output.next_agent:
-    # Route to specified specialist
-    await ctx.send_message(..., target_id=specialist_output.next_agent)
-    
-else:
-    # Both fields are None/False → workflow complete
-    await synthesize_final_plan()
-```
-
-This clean routing logic is only possible because of structured outputs - no text parsing or regex needed!
+>
+> ### Example Responses
+> 
+> **Autonomous routing** (agent proceeds to next specialist):
+> ```json
+> {
+>   "summary": "Researched 3 venues: The Foundry ($2k, 60 capacity, modern downtown), Pioneer Square Hall ($1.5k, 50 capacity, historic), Fremont Studios ($3k, 80 capacity, industrial). Recommended The Foundry for best balance of location, capacity, and budget.",
+>   "next_agent": "budget",
+>   "user_input_needed": false,
+>   "user_prompt": null
+> }
+> ```
+> 
+> **Request user input** (agent needs clarification):
+> ```json
+> {
+>   "summary": "Found 3 excellent venue options with different tradeoffs in price, location, and ambiance. Each meets your capacity requirement of 50 people.",
+>   "next_agent": null,
+>   "user_input_needed": true,
+>   "user_prompt": "Which venue style appeals to you: The Foundry (modern, $2k), Pioneer Square Hall (historic, $1.5k), or Fremont Studios (industrial, $3k)?"
+> }
+> }
+> ```
+> 
+> **Workflow complete** (final specialist finished):
+> ```json
+> {
+>   "summary": "Created comprehensive event timeline: setup 2-5pm, doors 6pm, reception 6:30pm, dinner 7pm, program 8pm, close 10pm. Weather forecast clear, all vendor coordination confirmed, calendar events created.",
+>   "next_agent": null,
+>   "user_input_needed": false,
+>   "user_prompt": null
+> }
+> ```
+> 
+> ### Understanding the Routing Logic
+> 
+> The coordinator uses this pattern (in `workflow/executors.py`):
+> ```python
+> specialist_output = parse_specialist_output(response)
+> 
+> if specialist_output.user_input_needed:
+>     # Pause workflow and request human input via DevUI
+>     await ctx.request_info(...)
+>     
+> elif specialist_output.next_agent:
+>     # Route to specified specialist
+>     await ctx.send_message(..., target_id=specialist_output.next_agent)
+>     
+> else:
+>     # Both fields are None/False → workflow complete
+>     await synthesize_final_plan()
+> ```
+> 
+> This clean routing logic is only possible because of structured outputs - no text parsing or regex needed!
 
 ---
 
@@ -734,7 +743,7 @@ This clean routing logic is only possible because of structured outputs - no tex
 
 1. **Open** `spec_to_agents/workflow/core.py`
 
-2. **Locate** the `# TODO: Exercise 5` comment (around line 89)
+2. **Locate** the `# TODO: Exercise 5` comment (around line 85)
 
 3. **Delete the `pass` statement**
 
@@ -868,28 +877,28 @@ This clean routing logic is only possible because of structured outputs - no tex
 > 7. Coordinator yields final output:
 >    await ctx.yield_output(final_plan)
 > ```
-
-### Understanding the Graph Structure
-
-The workflow creates this execution graph:
-
-!IMAGE[Event Planning Agent Design.png](instructions310255/Event Planning Agent Design.png){700}
-
-**Key Benefits**:
-- **Dynamic routing**: Coordinator decides next agent based on `SpecialistOutput.next_agent`
-- **Human-in-the-loop**: Any specialist can request user input, coordinator handles it
-- **Parallel potential**: Star topology could support parallel execution (future enhancement)
-- **Flexible flow**: Order isn't hardcoded - venue could route to catering, skipping budget if needed
-
-### Stable Workflow ID
-```python
-workflow.id = "event-planning-workflow"
-```
-
-This sets a stable identifier for the workflow, which:
-- Creates consistent DevUI URLs: `http://localhost:8080/workflow/event-planning-workflow`
-- Prevents URL changes on restart (random IDs would break bookmarks)
-- Enables workflow versioning and tracking in production
+> 
+> ### Understanding the Graph Structure
+> 
+> The workflow creates this execution graph:
+> 
+> !IMAGE[Event Planning Agent Design.png](instructions310255/Event Planning Agent Design.png){700}
+> 
+> **Key Benefits**:
+> - **Dynamic routing**: Coordinator decides next agent based on `SpecialistOutput.next_agent`
+> - **Human-in-the-loop**: Any specialist can request user input, coordinator handles it
+> - **Parallel potential**: Star topology could support parallel execution (future enhancement)
+> - **Flexible flow**: Order isn't hardcoded - venue could route to catering, skipping budget if needed
+> 
+> ### Stable Workflow ID
+> ```python
+> workflow.id = "event-planning-workflow"
+> ```
+> 
+> This sets a stable identifier for the workflow, which:
+> - Creates consistent DevUI URLs: `http://localhost:8080/workflow/event-planning-workflow`
+> - Prevents URL changes on restart (random IDs would break bookmarks)
+> - Enables workflow versioning and tracking in production
 
 ---
 ===
@@ -905,7 +914,7 @@ The `azd provision` command (from Section 4) automatically configured everything
 
    Look for this message in your terminal from Section 4:
    ```
-   SUCCESS: Deployment complete!
+   SUCCESS: Your application was provisioned in Azure ...
    ```
 
    > [!note] **Still Running?**
@@ -1079,12 +1088,41 @@ uv run app
 
 ===
 
+## 14. Deploy to Azure
 
-## 14. Explore Observability in Azure AI Foundry
+Now let's deploy your workflow to Azure!
 
-See how Azure AI Foundry provides enterprise observability for your multi-agent system.
+1. **Ensure `azd provision` completed** (from Section 4). Check the terminal for success message.
 
-### Access Azure AI Foundry
+2. **Deploy the application**:
+   ```powershell
+   azd deploy
+   ```
+
+3. **Wait for deployment** (3-5 minutes). You'll see output similar to:
+   ```
+   Deploying services (azd deploy)
+     Publishing service app (Uploading remote build context)
+     Publishing service app (Running remote build)
+     (✓) Done: Deploying service app
+     - Endpoint: https://ca-xxxxxxx.<region>.azurecontainerapps.io/
+   ```
+
+4. **Open the deployed DevUI**:
+   - Copy the Endpoint URL from the deployment output
+   - Open it in your browser
+   - Test the workflow with the same prompt you used locally: `Plan a corporate holiday party for 50 people, budget $5000`
+   - Verify that the deployed version works identically to your local DevUI
+
+---
+
+===
+
+## 15. Explore Observability in Microsoft Foundry
+
+See how Microsoft Foundry provides enterprise observability for your multi-agent system.
+
+### Access Microsoft Foundry
 
 1. **Navigate to** +++**https://ai.azure.com**+++ and click **Sign in**
 
@@ -1102,7 +1140,9 @@ See how Azure AI Foundry provides enterprise observability for your multi-agent 
 
 1. **Navigate to** **Tracing** under "Observe and optimize" in the left navigation
 
-2. **Click "Manage data source"** and connect to Application Insights (only one option available)
+2. **Click "Connect"** to connect to Application Insights (only one option available)
+
+!IMAGE[connect-appinsights.png](instructions310255/connect-appinsights.png)
 
 3. **View workflow runs** - each **workflow.run** entry shows a complete event planning execution:
 
@@ -1141,7 +1181,7 @@ See how Azure AI Foundry provides enterprise observability for your multi-agent 
 
 ### Use VS Code Extension
 
-1. **Click the Azure AI Foundry icon** in VS Code's left sidebar (bottom icon):
+1. **Click the Microsoft Foundry icon** in VS Code's left sidebar (bottom icon):
 
    !IMAGE[aif-vsc-extension.png](instructions310255/aif-vsc-extension.png){200}
 
@@ -1161,7 +1201,7 @@ See how Azure AI Foundry provides enterprise observability for your multi-agent 
 ---
 
 ===
-## 15. BONUS: Implement Entertainment Agent with Spec-Kit
+## 16. BONUS: Implement Entertainment Agent with Spec-Kit
 
 In this bonus exercise, you'll use **spec-kit** - a specification-driven development toolkit - to implement a new Entertainment Agent using GitHub Copilot. Instead of coding from scratch, you'll use pre-defined specifications and let Copilot implement the feature.
 
@@ -1539,53 +1579,84 @@ Let's discuss what just happened:
 ---
 
 ===
-## 16. BONUS: Explore Supervisor Pattern (Alternative Branch)
+## 17. BONUS: A2A (Agent-to-Agent) Integration
 
-The main branch uses a **star topology** where a coordinator routes between specialists. There's an alternative **supervisor pattern** available on a different branch.
+In this bonus exercise, you'll explore **Agent-to-Agent (A2A) communication** by integrating your event planning workflow with external A2A-compatible agents. A2A enables direct agent communication across different frameworks and deployments.
 
-!IMAGE[Event Planning Agent Design Bonus.png](instructions310255/Event Planning Agent Design Bonus.png){800}
+### What is A2A?
 
-1. **Switch to the supervisor branch**:
+A2A is an emerging standard protocol that enables:
+- **Cross-Framework Communication**: Agents built with different frameworks can communicate
+- **Distributed Agent Systems**: Agents can run in different environments and still collaborate
+- **Standardized Messaging**: Common protocol for agent-to-agent requests and responses
+
+### Exercise: Integrate an A2A Agent
+
+1. **Open a new VS Code window** for the A2A samples. From your current terminal, run:
    ```powershell
-   git fetch origin
-   git checkout feature/main-with-supervisor-workflow
+   code -n
+   ```
+   This opens a new VS Code instance in the same lab environment.
+
+2. **In the new VS Code window**, open a terminal and clone the A2A samples repository:
+   ```powershell
+   git clone https://github.com/a2aproject/a2a-samples.git
+   cd a2a-samples\samples\python\agents\azureaifoundry_sdk\azurefoundryagent
+   code . --reuse-window
+
    ```
 
-2. **Run the supervisor workflow**:
+3. Open a new Terminal and **Create a `.env` file** from the template:
+   ```powershell
+   cp .env.template .env
+   ```
+
+4. **Configure the A2A agent** with values from your spec-to-agents `.env` file:
+   
+   Open the `.env` file you just created and update:
+   ```
+   AZURE_AI_FOUNDRY_PROJECT_ENDPOINT=<Your Microsoft Foundry Project Endpoint>
+   AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME=gpt-5-mini
+   ```
+   
+   > [!hint] **Finding Your Endpoint**
+   > 
+   > The `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` value is in your spec-to-agents `.env` file. You can find it by opening the `.env` file in your original VS Code window (the spec-to-agents project).
+
+5. **Run the A2A agent**:
+   ```powershell
+   uv run .
+   ```
+   
+   The A2A agent will start and listen for requests from other agents. Keep this terminal running.
+
+6. **Return to your original VS Code window** (spec-to-agents project) and open the `.env` file.
+
+7. **Enable A2A integration** by uncommenting the `A2A_AGENT_HOST` variable:
+   ```
+   A2A_AGENT_HOST=http://localhost:10007
+   ```
+   
+   Save the file.
+
+8. **Test the A2A integration**:
    ```powershell
    uv run console
    ```
+   
+   Try a prompt that would benefit from the A2A agent's capabilities. Your event coordinator can now communicate with the external A2A agent when needed!
 
-3. **Compare the patterns**:
-
-   **Star Topology (main branch)**:
-   ```
-   User → Coordinator → Venue → Coordinator → Budget → Coordinator → ...
-   ```
-   - Coordinator reads `SpecialistOutput.next_agent` to route
-   - Specialists don't directly communicate
-   - Coordinator synthesizes final output
-
-   **Supervisor Pattern (bonus branch)**:
-   ```
-   User → Supervisor
-            ├─→ Venue ──┐
-            ├─→ Budget ─┤
-            ├─→ Catering┤→ Supervisor → Final Plan
-            └─→ Logistics┘
-   ```
-   - Supervisor delegates tasks in parallel
-   - Specialists work independently
-   - Supervisor aggregates all results at once
-
-4. **When to use each**:
-   - **Star**: Sequential dependencies (budget depends on venue)
-   - **Supervisor**: Independent tasks (can run in parallel)
+> [!knowledge] **A2A in Production**
+> 
+> In production scenarios, A2A enables:
+> - **Specialized Agent Services**: Deploy domain-expert agents as microservices
+> - **Multi-Organization Collaboration**: Agents from different organizations can communicate securely
+> - **Flexible Scaling**: Scale individual agent services independently based on demand
 
 ---
 ===
 
-## 17. Understanding What You Built
+## 18. Understanding What You Built
 
 Let's recap the key agent-framework concepts you've learned:
 
@@ -1639,7 +1710,7 @@ class MyOutput(BaseModel):
     next_agent: str | None
 ```
 
-### **Advanced Patterns (Bonus Section 14)**
+### **Advanced Patterns (Bonus Section 16)**
 
 **5. Spec-Driven Development**:
 ```
@@ -1655,7 +1726,7 @@ next_agent: Literal["venue", "budget", "catering", "logistics", "entertainment"]
 
 - **Enterprise-Ready**: Built on proven Semantic Kernel infrastructure
 - **Multi-Agent Orchestration**: Native support for complex workflows
-- **Azure Integration**: Works seamlessly with Azure AI Foundry
+- **Azure Integration**: Works seamlessly with Microsoft Foundry
 - **Observability**: Built-in tracing and monitoring
 - **Type Safety**: Pydantic models and Python type hints
 - **Flexible**: Supports both orchestrated and autonomous patterns
@@ -1664,38 +1735,11 @@ next_agent: Literal["venue", "budget", "catering", "logistics", "entertainment"]
 ---
 ===
 
-## 18. Deploy to Azure
+## 19. Explore Microsoft Foundry
 
-Now let's deploy your workflow to Azure!
+Your agents are also running in Microsoft Foundry!
 
-1. **Ensure `azd provision` completed** (from Section 4). Check the terminal for success message.
-
-2. **Deploy the application**:
-   ```powershell
-   cd ..  # Back to repository root
-   azd deploy
-   ```
-
-3. **Wait for deployment** (3-5 minutes). You'll see:
-   ```
-   Packaging services...
-   Building container image...
-   Pushing to Azure Container Registry...
-   Deploying to Azure Container Apps...
-   
-   SUCCESS: Deployed to https://devui-....azurecontainerapps.io
-   ```
-
-4. **Note the DevUI URL** from the output.
-
----
-===
-
-## 19. Explore Azure AI Foundry
-
-Your agents are also running in Azure AI Foundry!
-
-1. **Open Azure AI Foundry**: Navigate to +++**https://ai.azure.com**+++
+1. **Open Microsoft Foundry**: Navigate to +++**https://ai.azure.com**+++
 
 2. **Sign in** with your Azure credentials (from Section 1)
 
@@ -1705,7 +1749,7 @@ Your agents are also running in Azure AI Foundry!
 
 4. **View Deployed Agents**:
    - Left navigation → **Build** → **Agents**
-   - You'll see all 5 specialist agents listed (or 6 if you completed Section 14!)
+   - You'll see all 5 specialist agents listed (or 6 if you completed Section 16!)
    - Click any agent to view:
      - System instructions
      - Configured tools
@@ -1751,7 +1795,7 @@ Your agents are also running in Azure AI Foundry!
    ```
 
 2. **Confirm deletion** when prompted. This removes:
-   - Azure AI Foundry project
+   - Microsoft Foundry project
    - Model deployments
    - Container Apps
    - Container Registry
@@ -1781,15 +1825,20 @@ You've successfully built and deployed a production-ready multi-agent system! He
   - **MCP**: Integrated external tools via Model Context Protocol
 
 - **Production Deployment**:
-  - Deployed to Azure AI Foundry
+  - Deployed to Microsoft Foundry
   - Monitored with Application Insights
   - Visualized with DevUI
 
-- **Bonus: Spec-Driven Development** (Section 14):
+- **Bonus: Spec-Driven Development** (Section 16):
   - Used spec-kit to implement Entertainment Agent
   - Followed specification-driven workflow
   - Extended multi-agent system with new capability
   - Applied type-safe routing patterns
+
+- **Bonus: A2A Integration** (Section 17):
+  - Integrated external A2A-compatible agents
+  - Explored cross-framework agent communication
+  - Implemented distributed agent collaboration patterns
 
 ### **🎯 Key Takeaways**
 
@@ -1812,7 +1861,7 @@ Continue your agent-framework journey:
 ### **📚 Resources**
 
 - **Agent Framework**: [github.com/microsoft/agent-framework](https://github.com/microsoft/agent-framework)
-- **Azure AI Foundry**: [ai.azure.com](https://ai.azure.com)
+- **Microsoft Foundry**: [ai.azure.com](https://ai.azure.com)
 - **MCP Protocol**: [modelcontextprotocol.io](https://modelcontextprotocol.io)
 - **Spec-Kit**: [github.com/spec-kit](https://github.com/spec-kit)
 
