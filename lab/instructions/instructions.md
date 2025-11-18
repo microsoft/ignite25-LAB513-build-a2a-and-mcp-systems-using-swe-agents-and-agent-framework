@@ -60,11 +60,12 @@ Sign in to your lab environment using:
 Your lab environment comes pre-configured with:
 
 - **Visual Studio Code** - Primary development environment
-- **Python 3.14** - Latest stable version
+- **Python 3.12** - Latest stable version
 - **uv** - Fast Python package manager
 - **Azure CLI** - Manage Azure resources
 - **Azure Developer CLI (azd)** - Simplified deployment workflows
 - **AI Toolkit extension for VSCode** - Simplifies Gen AI App Development
+- **Microsoft Foundry extension for VSCode** - Unified platform for Enterprise AI operations, Model builders, and App development
 - **Git** - Source control
 
 > [!hint] **Ignore Sign-In Notifications**
@@ -83,6 +84,9 @@ Your lab environment comes pre-configured with:
    
    - Temporary Access Pass: 
      +++@lab.CloudPortalCredential(User1).AccessToken+++
+
+   - If Temp pass didn't work, try
+     +++@lab.CloudPortalCredential(User1).Password+++
 
 1. Click on Yes to Stay Signed-in, when prompted
 
@@ -177,6 +181,7 @@ You'll use Azure Developer CLI (azd) to provision all necessary Azure resources.
    Select the existing signed-in account (from Step 1), or authenticate with:
    - Username: **+++@lab.CloudPortalCredential(User1).Username+++**  
    - Temporary Access Pass: **+++@lab.CloudPortalCredential(User1).AccessToken+++**
+   - If Temp pass didn't work, try **+++@lab.CloudPortalCredential(User1).Password+++**
    
    Authenticate in your browser, then close the tab and return to VS Code.
    
@@ -195,6 +200,7 @@ You'll use Azure Developer CLI (azd) to provision all necessary Azure resources.
    Sign in with your Azure credentials:
    - Username: **+++@lab.CloudPortalCredential(User1).Username+++**  
    - Temporary Access Pass: **+++@lab.CloudPortalCredential(User1).AccessToken+++**
+   - If Temp pass didn't work, try **+++@lab.CloudPortalCredential(User1).Password+++**
    
    !IMAGE[azlogin-signinwithazure.png](instructions310255/azlogin-signinwithazure.png)
    
@@ -1129,6 +1135,7 @@ See how Microsoft Foundry provides enterprise observability for your multi-agent
 2. **Authenticate** with your credentials (or use existing signed-in account):
    - Username: +++**@lab.CloudPortalCredential(User1).Username**+++
    - Temporary Access Pass: +++**@lab.CloudPortalCredential(User1).AccessToken**+++
+   - If Temp pass didn't work, try +++**@lab.CloudPortalCredential(User1).Password**+++
 
 3. **Select your project** (there will be only one):
 
@@ -1199,9 +1206,127 @@ See how Microsoft Foundry provides enterprise observability for your multi-agent
 > - **Threads**: Conversation history and state
 
 ---
-
 ===
-## 16. BONUS: Implement Entertainment Agent with Spec-Kit
+## 16. BONUS: A2A (Agent-to-Agent) Integration
+
+In this bonus exercise, you'll explore **Agent-to-Agent (A2A) communication** by integrating your event planning workflow with external A2A-compatible agents. A2A enables direct agent communication across different frameworks and deployments.
+
+### What is A2A?
+
+A2A is an emerging standard protocol that enables:
+- **Cross-Framework Communication**: Agents built with different frameworks can communicate
+- **Distributed Agent Systems**: Agents can run in different environments and still collaborate
+- **Standardized Messaging**: Common protocol for agent-to-agent requests and responses
+
+### Exercise: Integrate an A2A Agent
+
+1. **Open a new VS Code window** for the A2A samples. From your current terminal, run:
+   ```powershell
+code -n
+   ```
+   This opens a new VS Code instance in the same lab environment.
+
+2. **In the new VS Code window**, open a terminal and clone the A2A samples repository:
+   ```powershell
+git clone https://github.com/a2aproject/a2a-samples.git
+cd a2a-samples\samples\python\agents\azureaifoundry_sdk\azurefoundryagent
+code . --reuse-window
+   ```
+
+3. Open a new Terminal and **Create a `.env` file** from the template:
+   ```powershell
+cp .env.template .env
+   ```
+
+4. **Configure the A2A agent** with values from your spec-to-agents `.env` file:
+   
+   Open the `.env` file you just created and update:
+   ```
+AZURE_AI_FOUNDRY_PROJECT_ENDPOINT=<Your Microsoft Foundry Project Endpoint From Spec-to-Agents>
+AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME=gpt-5-mini
+   ```
+   
+   > [!hint] **Finding Your Endpoint**
+   > 
+   > The `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` value is in your spec-to-agents `.env` file. You can find it by opening the `.env` file in your original VS Code window (the spec-to-agents project).
+
+5. **Run the A2A agent**:
+   ```powershell
+uv run .
+   ```
+   
+   The A2A agent will start and listen for requests from other agents. Keep this terminal running.
+
+6. **Return to your original VS Code window** (spec-to-agents project) and open the `.env` file.
+
+7. **Enable A2A integration** by uncommenting the `A2A_AGENT_HOST` variable:
+   ```
+A2A_AGENT_HOST=http://localhost:10007
+   ```
+   
+   Save the file.
+
+9. **Test the A2A integration via DevUI**:
+   
+   From your *spec-to-agents* repository, start DevUI (if not already running):
+   ```powershell
+uv run app
+   ```
+   
+   DevUI will launch and open in your browser at `http://localhost:8080`
+
+10. **Select the AI Foundry Calendar Agent**:
+    - In DevUI, click the **Agents** dropdown at the top (currently shows "Workflows")
+    - Select **"AI Foundry Calendar Agent"** from the list
+    
+    !IMAGE[devui-calendar-agent.png](instructions310255/devui-calendar-agent.png){400}
+
+11. **Interact with the A2A agent**:
+    - In the chat input at the bottom, type: `Check my availability for Friday at 8 am`
+    - Press Enter and watch the response
+    - Try other queries like:
+      - `Schedule a meeting for tomorrow at 2 PM`
+      - `What events do I have next week?`
+
+12. **Observe the A2A communication**:
+    - **Switch to your A2A VS Code window** and check the terminal where `uv run .` is running
+    - You'll see console logs showing incoming requests from your spec-to-agents DevUI interaction
+    - The logs show the A2A protocol in action - your agent-framework workflow communicating with the Azure AI Foundry Agent that is A2A compatible
+
+13. **View the agent in Microsoft Foundry**:
+    - Navigate to +++**https://ai.azure.com**+++
+    - Sign in and select your project
+    - Go to **Build** → **Agents** in the left navigation
+    - You'll see **foundry-calendar-agent** listed alongside your event planning agents
+    - Click on it to view:
+      - The agent configuration
+      - Conversation threads from your DevUI interactions
+      - Tool calls and responses
+    
+    !IMAGE[Foundry-agents-calendar.png](instructions310255/Foundry-agents-calendar.png){400}
+
+> [!knowledge] **What Just Happened?**
+> 
+> You've just demonstrated cross-framework agent communication:
+> 
+> **The Flow:**
+> 1. **DevUI / Agent Framework** (spec-to-agents) → sent user request via A2A protocol to...
+> 2. **A2A compatabile Azure AI Foundry Agent** (foundry-calendar-agent) → processed A2A request using Azure AI Foundry's agent capabilities
+> 
+> **Key Insight:** The Azure AI Foundry Agent is an instance of Azure's native agent service, but your agent-framework agents can communicate with it seamlessly through the A2A protocol. This demonstrates true interoperability across different agent frameworks and deployment models.
+
+> [!knowledge] **A2A in Production**
+> 
+> In production scenarios, A2A enables:
+> - **Specialized Agent Services**: Deploy domain-expert agents (like calendar management) as microservices
+> - **Multi-Organization Collaboration**: Agents from different organizations can communicate securely
+> - **Flexible Scaling**: Scale individual agent services independently based on demand
+> - **Framework Agnostic**: Use the best tool for each job - Azure AI Foundry for some agents, custom frameworks for others
+
+---
+===
+
+## 17. BONUS: Implement Entertainment Agent with Spec-Kit
 
 In this bonus exercise, you'll use **spec-kit** - a specification-driven development toolkit - to implement a new Entertainment Agent using GitHub Copilot. Instead of coding from scratch, you'll use pre-defined specifications and let Copilot implement the feature.
 
@@ -1579,83 +1704,6 @@ Let's discuss what just happened:
 ---
 
 ===
-## 17. BONUS: A2A (Agent-to-Agent) Integration
-
-In this bonus exercise, you'll explore **Agent-to-Agent (A2A) communication** by integrating your event planning workflow with external A2A-compatible agents. A2A enables direct agent communication across different frameworks and deployments.
-
-### What is A2A?
-
-A2A is an emerging standard protocol that enables:
-- **Cross-Framework Communication**: Agents built with different frameworks can communicate
-- **Distributed Agent Systems**: Agents can run in different environments and still collaborate
-- **Standardized Messaging**: Common protocol for agent-to-agent requests and responses
-
-### Exercise: Integrate an A2A Agent
-
-1. **Open a new VS Code window** for the A2A samples. From your current terminal, run:
-   ```powershell
-   code -n
-   ```
-   This opens a new VS Code instance in the same lab environment.
-
-2. **In the new VS Code window**, open a terminal and clone the A2A samples repository:
-   ```powershell
-   git clone https://github.com/a2aproject/a2a-samples.git
-   cd a2a-samples\samples\python\agents\azureaifoundry_sdk\azurefoundryagent
-   code . --reuse-window
-
-   ```
-
-3. Open a new Terminal and **Create a `.env` file** from the template:
-   ```powershell
-   cp .env.template .env
-   ```
-
-4. **Configure the A2A agent** with values from your spec-to-agents `.env` file:
-   
-   Open the `.env` file you just created and update:
-   ```
-   AZURE_AI_FOUNDRY_PROJECT_ENDPOINT=<Your Microsoft Foundry Project Endpoint>
-   AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME=gpt-5-mini
-   ```
-   
-   > [!hint] **Finding Your Endpoint**
-   > 
-   > The `AZURE_AI_FOUNDRY_PROJECT_ENDPOINT` value is in your spec-to-agents `.env` file. You can find it by opening the `.env` file in your original VS Code window (the spec-to-agents project).
-
-5. **Run the A2A agent**:
-   ```powershell
-   uv run .
-   ```
-   
-   The A2A agent will start and listen for requests from other agents. Keep this terminal running.
-
-6. **Return to your original VS Code window** (spec-to-agents project) and open the `.env` file.
-
-7. **Enable A2A integration** by uncommenting the `A2A_AGENT_HOST` variable:
-   ```
-   A2A_AGENT_HOST=http://localhost:10007
-   ```
-   
-   Save the file.
-
-8. **Test the A2A integration**:
-   ```powershell
-   uv run console
-   ```
-   
-   Try a prompt that would benefit from the A2A agent's capabilities. Your event coordinator can now communicate with the external A2A agent when needed!
-
-> [!knowledge] **A2A in Production**
-> 
-> In production scenarios, A2A enables:
-> - **Specialized Agent Services**: Deploy domain-expert agents as microservices
-> - **Multi-Organization Collaboration**: Agents from different organizations can communicate securely
-> - **Flexible Scaling**: Scale individual agent services independently based on demand
-
----
-===
-
 ## 18. Understanding What You Built
 
 Let's recap the key agent-framework concepts you've learned:
@@ -1710,7 +1758,7 @@ class MyOutput(BaseModel):
     next_agent: str | None
 ```
 
-### **Advanced Patterns (Bonus Section 16)**
+### **Advanced Patterns (Bonus Section 17)**
 
 **5. Spec-Driven Development**:
 ```
@@ -1749,7 +1797,7 @@ Your agents are also running in Microsoft Foundry!
 
 4. **View Deployed Agents**:
    - Left navigation → **Build** → **Agents**
-   - You'll see all 5 specialist agents listed (or 6 if you completed Section 16!)
+   - You'll see all 5 specialist agents listed (or 6 if you completed Section 17!)
    - Click any agent to view:
      - System instructions
      - Configured tools
@@ -1785,9 +1833,7 @@ Your agents are also running in Microsoft Foundry!
 
 ## 20. Clean-Up
 
-> [!alert] **Important: Remove Azure Resources**
-> 
-> To avoid charges, delete all Azure resources created in this lab.
+Delete all Azure resources created in this lab (Optional - lab will be purged automatically).
 
 1. **Delete Azure resources**:
    ```powershell
@@ -1801,7 +1847,7 @@ Your agents are also running in Microsoft Foundry!
    - Container Registry
    - All associated resources
 
-3. **Sign out** from services (Optional - lab will be purged automatically):
+3. **Sign out** from services:
    - VS Code: Click profile icon → **Sign Out**
    - Edge: Sign out from GitHub, Azure Portal, AI Foundry
 
@@ -1829,16 +1875,16 @@ You've successfully built and deployed a production-ready multi-agent system! He
   - Monitored with Application Insights
   - Visualized with DevUI
 
-- **Bonus: Spec-Driven Development** (Section 16):
+- **Bonus: A2A Integration** (Section 16):
+  - Integrated external A2A-compatible agents
+  - Explored cross-framework agent communication
+  - Implemented distributed agent collaboration patterns
+
+- **Bonus: Spec-Driven Development** (Section 17):
   - Used spec-kit to implement Entertainment Agent
   - Followed specification-driven workflow
   - Extended multi-agent system with new capability
   - Applied type-safe routing patterns
-
-- **Bonus: A2A Integration** (Section 17):
-  - Integrated external A2A-compatible agents
-  - Explored cross-framework agent communication
-  - Implemented distributed agent collaboration patterns
 
 ### **🎯 Key Takeaways**
 
@@ -1862,7 +1908,6 @@ Continue your agent-framework journey:
 
 - **Agent Framework**: [github.com/microsoft/agent-framework](https://github.com/microsoft/agent-framework)
 - **Microsoft Foundry**: [ai.azure.com](https://ai.azure.com)
-- **MCP Protocol**: [modelcontextprotocol.io](https://modelcontextprotocol.io)
 - **Spec-Kit**: [github.com/spec-kit](https://github.com/spec-kit)
 
 **Happy coding at Microsoft Ignite 2025!**
