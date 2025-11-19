@@ -1,3 +1,26 @@
+> [!alert] ## Lab Environment Setup
+> 
+> **🚨 IMPORTANT - READ THIS FIRST! 🚨**
+>
+> **DO NOT use the Surface laptop on your desk!** You will work **ONLY** in the **Skillable Lab Cloud VM** (the virtual machine in your browser).
+>
+> ### Before You Begin:
+> 1. **Fullscreen Your Lab Environment**: Click the fullscreen button in the top-left toolbar to maximize your workspace:
+>    
+>    !IMAGE[fullscreen.png](instructions310255/fullscreen.png)
+>    
+>    Look for the **four-arrow icon** (⛶) in the toolbar and click it to enter fullscreen mode.
+>
+> 2. **DO NOT Close the Lab Cloud VM**: Keep your browser tab with the Skillable Lab VM open for the entire duration of the lab. Closing it will terminate your lab session.
+>
+> 3. **Work Inside the VM**: All your work will be done inside the virtual machine environment. The Surface laptop is **not** part of this lab.
+>
+> ✅ **You're ready to proceed once you've:**
+> - Entered fullscreen mode in the Skillable Lab Cloud VM
+> - Confirmed you're working in the browser-based VM (not the physical Surface laptop)
+
+===
+
 # Build A2A and MCP Systems using SWE Agents and agent-framework
 
 ## Lab Scenario
@@ -51,7 +74,7 @@ Your workflow in this lab uses message passing between agents through workflow e
 ===
 
 
-## 1.  Lab Set-Up & Sign-In to Skillable Events GitHub
+## 1. Lab Environment Setup
 
 Sign in to your lab environment using:
 - Username: +++@lab.VirtualMachine(Win11-Pro-Base).Username+++
@@ -72,66 +95,21 @@ Your lab environment comes pre-configured with:
 > 
 > You may see blue "Sign in required" notifications or "Activate Windows" watermarks. Simply click "Not now" and continue - these won't affect your lab experience.
 
-**Configure GitHub Copilot using *Skillable Events* GitHub Enterprise:**
-1. From your Desktop (or Taskbar), open the **Edge** shortcut, and navigate to: +++**https://github.com/skillable-events**+++
-1. Single sign-on to Skillable events, by clicking **Continue** on this page.
-
-   !IMAGE[0-skillable-signin.png](instructions310255/0-skillable-signin.png)
-
-1. Sign in with your Azure Cloud Credentials:
-   - Username: 
-   +++@lab.CloudPortalCredential(User1).Username+++
-   
-   - Temporary Access Pass: 
-     +++@lab.CloudPortalCredential(User1).AccessToken+++
-
-   - If Temp pass didn't work, try
-     +++@lab.CloudPortalCredential(User1).Password+++
-
-1. Click on Yes to Stay Signed-in, when prompted
-
----
-
-## 2.  Sign In to GitHub Copilot
-
-Before cloning the repository, you'll need to sign in to GitHub Copilot with the lab-provided GitHub Enterprise account.
-
-> [!important] **Complete Step 1 First**
-> 
-> Ensure you've signed in to Skillable Events GitHub from Step 1 before proceeding.
-
-1. Launch **Visual Studio Code** from the Taskbar.
-
-2. In the bottom-right corner of VS Code, click the **GitHub Copilot** status icon, then click **Continue with GitHub**.
-
-   !IMAGE[1-vsc-ghcp-signin.png](instructions310255/1-vsc-ghcp-signin.png)
-   
-   !IMAGE[1b-vsc-continue-w-github.png](instructions310255/1b-vsc-continue-w-github.png)
-
-3. A browser window will open asking you to authorize Visual Studio Code. Click **Continue** to proceed.
-
-4. On the authorization page, click **Authorize Visual-Studio-Code** to grant access.
-
-   !IMAGE[2-authorize-vsc.png](instructions310255/2-authorize-vsc.png)
-
-5. After authorization, the browser will redirect. Close the browser tab and return to VS Code.
-
-6. Verify that the GitHub Copilot icon in the bottom-right now shows you're signed in.
-
-> [!note] **GitHub Enterprise Account**
-> 
-> This lab uses a GitHub Enterprise account from the **skillable-events** organization, which provides access to GitHub Copilot features needed for this lab to work with specs.
-
 ---
 
 ===
 
 
-## 3.  Clone and Set Up the Repository
+## 2. Clone and Set Up the Repository
 
-1. In VS Code, open a new **Terminal** (*Terminal → New Terminal*).
+1. Launch **Visual Studio Code** from the Taskbar.
 
-2. Clone the Microsoft spec-to-agents repository and open the project:
+2. In VS Code, open a new **Terminal** (*Terminal → New Terminal*).
+
+3. Clone the Microsoft spec-to-agents repository and open the project:
+
+> [!hint] Use **Copy** instead of Type for longer snippets
+
 
    ```powershell
 # Clone the repository
@@ -146,8 +124,8 @@ code . --reuse-window
 
    ```
 
-3. VS Code will reload with the **spec-to-agents** folder open.
-4. When prompted with the workspace trust dialog, click **Yes, I trust the authors** to enable all features.
+4. VS Code will reload with the **spec-to-agents** folder open.
+5. When prompted with the workspace trust dialog, click **Yes, I trust the authors** to enable all features.
 
 ### Install dependencies:
 
@@ -160,15 +138,17 @@ uv sync
 
 > [!hint] **Save Time: Start Azure Authentication in Parallel**
 > 
-> While `uv sync` is running, open a **new terminal** (*Terminal → New Terminal* or click the **+** icon) and proceed to Section 4 to authenticate with Azure. This lets both processes run simultaneously!
+> While `uv sync` is running, open a **new terminal** (*Terminal → New Terminal* or click the **+** icon) and proceed to Section 3 to authenticate with Azure. This lets both processes run simultaneously!
 
 ---
-## 4  Start Azure Resource Provisioning (Background Process)
+===
+## 3. Start Azure Resource Provisioning (Background Process)
+
 You'll use Azure Developer CLI (azd) to provision all necessary Azure resources. This process takes 5-10 minutes and runs in the background while you work on coding exercises.
 
 > [!note] **Parallel Execution**
 > 
-> If `uv sync` is still running from Section 3, that's fine! Open a new terminal for these commands so both can run in parallel.
+> If `uv sync` is still running from Section 2, that's fine! Open a new terminal for these commands so both can run in parallel.
 
 1. **Open a new terminal** in VS Code (*Terminal → New Terminal* or click the **+** icon)
 
@@ -181,45 +161,36 @@ You'll use Azure Developer CLI (azd) to provision all necessary Azure resources.
    Select the existing signed-in account (from Step 1), or authenticate with:
    - Username: **+++@lab.CloudPortalCredential(User1).Username+++**  
    - Temporary Access Pass: **+++@lab.CloudPortalCredential(User1).AccessToken+++**
-   - If Temp pass didn't work, try **+++@lab.CloudPortalCredential(User1).Password+++**
+
+> [+help] If Temp pass didn't work, try   
+> 
+> **+++@lab.CloudPortalCredential(User1).Password+++**
    
    Authenticate in your browser, then close the tab and return to VS Code.
    
    Next, authenticate with **Azure CLI**:
    
-   **+++az login+++**
+   **+++az login --use-device-code+++**
    
-   A sign-in dialog will appear. Click **Work or school account**, then click **Continue**:
-   
-   !IMAGE[azlogin-work-school.png](instructions310255/azlogin-work-school.png)
-   
+   Following the instructions to copy your device code and Sign in:
 
-> [!note]  You may need to minimize VS Code to see the sign-in window.   
-
+   !IMAGE[device-code-az-login.png](instructions310255/device-code-az-login.png){300}
    
-   Sign in with your Azure credentials:
+   Select existing account, or enter:
    - Username: **+++@lab.CloudPortalCredential(User1).Username+++**  
    - Temporary Access Pass: **+++@lab.CloudPortalCredential(User1).AccessToken+++**
-   - If Temp pass didn't work, try **+++@lab.CloudPortalCredential(User1).Password+++**
    
-   !IMAGE[azlogin-signinwithazure.png](instructions310255/azlogin-signinwithazure.png)
-   
-   When prompted about device registration, click **No, this app only**:
-   
-   !IMAGE[azcli-thisdevice.png](instructions310255/azcli-thisdevice.png)
+   !IMAGE[device-login-continue.png](instructions310255/device-login-continue.png){300}
    
    Return to VS Code terminal and press **Enter** to select the default subscription.
-   ---
 
-===
+---
 
-## 4  Start Azure Resource Provisioning (Background Process) - continued.
-
-2. **Create azd Environment**:
+3. **Create azd Environment**:
    
    **+++azd env new agents-lab-@lab.LabInstance.Id --subscription @lab.CloudSubscription.Id --location @lab.CloudResourceGroup(ResourceGroup1).Location+++**
 
-3. **Start Provisioning** (do not wait for completion):
+4. **Start Provisioning** (do not wait for completion):
    
    **+++azd provision+++**
 
@@ -250,7 +221,7 @@ You'll use Azure Developer CLI (azd) to provision all necessary Azure resources.
 
 ===
 
-## 5. Understanding the Codebase Structure
+## 4. Understanding the Codebase Structure
 
 Before diving into coding, let's understand how the agent-framework code is organized.
 
@@ -303,7 +274,7 @@ src/spec_to_agents/
 
 ===
 
-## 6. Exercise 1: Create Your First Agent
+## 5. Exercise 1: Create Your First Agent
 
 **Concept**: In agent-framework, an **agent** is created by combining three elements:
 1. **System instructions** (the "personality" and expertise)
@@ -312,7 +283,7 @@ src/spec_to_agents/
 
 > [!important] **Testing Comes Later**
 > 
-> You'll implement agent logic now, but won't run the workflow until **Exercise 12**. This allows `azd provision` (from Section 4) to complete in the background while you learn the framework through hands-on coding.
+> You'll implement agent logic now, but won't run the workflow until **Exercise 11**. This allows `azd provision` (from Section 3) to complete in the background while you learn the framework through hands-on coding.
 
 ### Instructions
 
@@ -323,6 +294,9 @@ src/spec_to_agents/
 3. **Delete the `pass` statement**
 
 4. **Uncomment and complete the agent creation code** by replacing the TODO section with:
+
+
+> [!hint] Use **Copy** instead of Type for longer snippets
 
 ```python
 # Exercise 1 - Create Venue Specialist agent with web search capability
@@ -384,7 +358,7 @@ src/spec_to_agents/
 
 ===
 
-## 7. Exercise 2: Implement a Web Search Tool
+## 6. Exercise 2: Implement a Web Search Tool
 
 **Concept**: Tools in agent-framework are Python functions decorated with `@ai_function`. The LLM discovers and invokes these tools automatically when needed.
 
@@ -392,7 +366,7 @@ src/spec_to_agents/
 
 > [!important] **Testing Still Comes Later**
 > 
-> Continue building components - you'll test everything together in Exercise 12 after `azd provision` completes.
+> Continue building components - you'll test everything together in Exercise 11 after `azd provision` completes.
 
 ### Instructions
 
@@ -488,7 +462,7 @@ src/spec_to_agents/
 
 ===
 
-## 8. Exercise 3: Add MCP Sequential Thinking Tool
+## 7. Exercise 3: Add MCP Sequential Thinking Tool
 
 **Concept**: **MCP (Model Context Protocol)** is an open standard for connecting AI models to external tools. The `sequential-thinking` MCP server provides advanced reasoning capabilities to help agents break down complex planning tasks.
 
@@ -584,7 +558,7 @@ src/spec_to_agents/
 
 ===
 
-## 9. Exercise 4: Define Structured Output Format
+## 8. Exercise 4: Define Structured Output Format
 
 **Concept**: **Structured outputs** ensure agents return predictable, parseable responses instead of free-form text. This enables reliable workflow routing and eliminates brittle text parsing.
 
@@ -741,7 +715,7 @@ src/spec_to_agents/
 
 ===
 
-## 10. Exercise 5: Build the Workflow with Edges
+## 9. Exercise 5: Build the Workflow with Edges
 
 **Concept**: The **WorkflowBuilder** defines how agents communicate through **edges**. Each edge represents a potential message-passing path between executors.
 
@@ -910,15 +884,15 @@ src/spec_to_agents/
 ===
 
 
-## 11. Verify Environment Setup
+## 10. Verify Environment Setup
 
-The `azd provision` command (from Section 4) automatically configured everything. Let's verify it completed.
+The `azd provision` command (from Section 3) automatically configured everything. Let's verify it completed.
 
 ### Instructions
 
 1. **Check `azd provision` finished successfully**
 
-   Look for this message in your terminal from Section 4:
+   Look for this message in your terminal from Section 3:
    ```
    SUCCESS: Your application was provisioned in Azure ...
    ```
@@ -951,7 +925,7 @@ Test-Path .env
 
 ===
 
-## 12. Run Your First Multi-Agent Workflow
+## 11. Run Your First Multi-Agent Workflow
 
 Now let's see your agents in action!
 
@@ -1046,7 +1020,7 @@ uv run console
 ---
 ===
 
-## 13. Visualize with DevUI
+## 12. Visualize with DevUI
 
 Run the workflow with a visual interface for debugging and exploration.
 
@@ -1094,11 +1068,11 @@ uv run app
 
 ===
 
-## 14. Deploy to Azure
+## 13. Deploy to Azure
 
 Now let's deploy your workflow to Azure!
 
-1. **Ensure `azd provision` completed** (from Section 4). Check the terminal for success message.
+1. **Ensure `azd provision` completed** (from Section 3). Check the terminal for success message.
 
 2. **Deploy the application**:
    ```powershell
@@ -1124,7 +1098,7 @@ Now let's deploy your workflow to Azure!
 
 ===
 
-## 15. Explore Observability in Microsoft Foundry
+## 14. Explore Observability in Microsoft Foundry
 
 See how Microsoft Foundry provides enterprise observability for your multi-agent system.
 
@@ -1135,7 +1109,10 @@ See how Microsoft Foundry provides enterprise observability for your multi-agent
 2. **Authenticate** with your credentials (or use existing signed-in account):
    - Username: +++**@lab.CloudPortalCredential(User1).Username**+++
    - Temporary Access Pass: +++**@lab.CloudPortalCredential(User1).AccessToken**+++
-   - If Temp pass didn't work, try +++**@lab.CloudPortalCredential(User1).Password**+++
+   
+> [+help] If Temp pass didn't work, try   
+> 
+> **+++@lab.CloudPortalCredential(User1).Password+++**
 
 3. **Select your project** (there will be only one):
 
@@ -1207,7 +1184,7 @@ See how Microsoft Foundry provides enterprise observability for your multi-agent
 
 ---
 ===
-## 16. BONUS: A2A (Agent-to-Agent) Integration
+## 15. BONUS: A2A (Agent-to-Agent) Integration
 
 In this bonus exercise, you'll explore **Agent-to-Agent (A2A) communication** by integrating your event planning workflow with external A2A-compatible agents. A2A enables direct agent communication across different frameworks and deployments.
 
@@ -1326,7 +1303,7 @@ uv run app
 ---
 ===
 
-## 17. BONUS: Implement Entertainment Agent with Spec-Kit
+## 16. BONUS: Implement Entertainment Agent with Spec-Kit
 
 In this bonus exercise, you'll use **spec-kit** - a specification-driven development toolkit - to implement a new Entertainment Agent using GitHub Copilot. Instead of coding from scratch, you'll use pre-defined specifications and let Copilot implement the feature.
 
@@ -1348,7 +1325,57 @@ For this lab, we've **pre-populated** all specifications. You'll focus on the im
 
 ---
 
-### Step 1: Review Pre-Populated Specifications
+### Step 1: Sign In to Skillable Events GitHub Enterprise
+
+Before using spec-kit with GitHub Copilot, you need to authenticate with the lab-provided GitHub Enterprise account.
+
+1. From your Desktop (or Taskbar), open the **Edge** shortcut, and navigate to: +++**https://github.com/skillable-events**+++
+
+2. Single sign-on to Skillable events, by clicking **Continue** on this page.
+
+   !IMAGE[0-skillable-signin.png](instructions310255/0-skillable-signin.png)
+
+3. Sign in with your Azure Cloud Credentials:
+   - Username: +++@lab.CloudPortalCredential(User1).Username+++
+   - Temporary Access Pass: +++@lab.CloudPortalCredential(User1).AccessToken+++
+
+> [+help] If Temp pass didn't work, try   
+> 
+> **+++@lab.CloudPortalCredential(User1).Password+++**
+
+4. Click on **Yes** to Stay Signed-in, when prompted
+
+---
+
+### Step 2: Sign In to GitHub Copilot in VS Code
+
+Now connect VS Code to GitHub Copilot using your Skillable Events account:
+
+1. Return to **Visual Studio Code**
+
+2. In the bottom-right corner of VS Code, click the **GitHub Copilot** status icon, then click **Continue with GitHub**.
+
+   !IMAGE[1-vsc-ghcp-signin.png](instructions310255/1-vsc-ghcp-signin.png)
+   
+   !IMAGE[1b-vsc-continue-w-github.png](instructions310255/1b-vsc-continue-w-github.png)
+
+3. A browser window will open asking you to authorize Visual Studio Code. Click **Continue** to proceed.
+
+4. On the authorization page, click **Authorize Visual-Studio-Code** to grant access.
+
+   !IMAGE[2-authorize-vsc.png](instructions310255/2-authorize-vsc.png)
+
+5. After authorization, the browser will redirect. Close the browser tab and return to VS Code.
+
+6. Verify that the GitHub Copilot icon in the bottom-right now shows you're signed in.
+
+> [!note] **GitHub Enterprise Account**
+> 
+> This lab uses a GitHub Enterprise account from the **skillable-events** organization, which provides access to GitHub Copilot features needed for spec-kit to work.
+
+---
+
+### Step 3: Review Pre-Populated Specifications
 
 The `.specify/` directory contains all the specifications for the Entertainment Agent feature:
 
@@ -1378,7 +1405,7 @@ The `.specify/` directory contains all the specifications for the Entertainment 
 
 ---
 
-### Step 2: Switch to Claude Sonnet 4.5
+### Step 4: Switch to Claude Sonnet 4.5
 
 For optimal spec-kit performance, use the Claude Sonnet 4.5 model:
 
@@ -1390,7 +1417,7 @@ For optimal spec-kit performance, use the Claude Sonnet 4.5 model:
 
 ---
 
-### Step 3: Start Spec-Kit Implementation
+### Step 5: Start Spec-Kit Implementation
 
 Now you'll trigger Copilot to implement all tasks:
 
@@ -1413,7 +1440,7 @@ Now you'll trigger Copilot to implement all tasks:
 
 ---
 
-### Step 4: Approve Copilot Requests
+### Step 6: Approve Copilot Requests
 
 As Copilot implements tasks, it will request permission to modify files:
 
@@ -1447,7 +1474,7 @@ As Copilot implements tasks, it will request permission to modify files:
 
 ---
 
-### Step 5: Learn About Spec-Kit (While Copilot Works)
+### Step 7: Learn About Spec-Kit (While Copilot Works)
 
 While Copilot implements the tasks (~5-10 minutes), let's understand what's happening:
 
@@ -1506,11 +1533,11 @@ The **Entertainment Agent** will:
 4. **Coordinate timing** with Logistics Agent
 5. **Return structured recommendations** to Event Coordinator
 
-This demonstrates the complete agent-framework pattern you learned in Exercises 1-12.
+This demonstrates the complete agent-framework pattern you learned in Exercises 1-11.
 
 ---
 
-### Step 6: Verify Implementation Complete
+### Step 8: Verify Implementation Complete
 
 After Copilot finishes (~10 minutes), verify all changes:
 
@@ -1544,7 +1571,7 @@ After Copilot finishes (~10 minutes), verify all changes:
 
 ---
 
-### Step 7: Test in Console Mode
+### Step 9: Test in Console Mode
 
 Now test the complete workflow with the new Entertainment Agent:
 
@@ -1611,7 +1638,7 @@ Now test the complete workflow with the new Entertainment Agent:
 
 ---
 
-### Step 8: Test in DevUI
+### Step 10: Test in DevUI
 
 Finally, verify the Entertainment Agent appears in the visual workflow:
 
@@ -1648,7 +1675,7 @@ Finally, verify the Entertainment Agent appears in the visual workflow:
 
 ---
 
-### Step 9: Reflection - What Did Spec-Kit Enable?
+### Step 11: Reflection - What Did Spec-Kit Enable?
 
 Let's discuss what just happened:
 
@@ -1704,7 +1731,7 @@ Let's discuss what just happened:
 ---
 
 ===
-## 18. Understanding What You Built
+## 17. Understanding What You Built
 
 Let's recap the key agent-framework concepts you've learned:
 
@@ -1758,7 +1785,7 @@ class MyOutput(BaseModel):
     next_agent: str | None
 ```
 
-### **Advanced Patterns (Bonus Section 17)**
+### **Advanced Patterns (Bonus Section 16)**
 
 **5. Spec-Driven Development**:
 ```
@@ -1783,7 +1810,7 @@ next_agent: Literal["venue", "budget", "catering", "logistics", "entertainment"]
 ---
 ===
 
-## 19. Explore Microsoft Foundry
+## 18. Explore Microsoft Foundry
 
 Your agents are also running in Microsoft Foundry!
 
@@ -1797,7 +1824,7 @@ Your agents are also running in Microsoft Foundry!
 
 4. **View Deployed Agents**:
    - Left navigation → **Build** → **Agents**
-   - You'll see all 5 specialist agents listed (or 6 if you completed Section 17!)
+   - You'll see all 5 specialist agents listed (or 6 if you completed Section 16!)
    - Click any agent to view:
      - System instructions
      - Configured tools
@@ -1831,7 +1858,7 @@ Your agents are also running in Microsoft Foundry!
 ---
 ===
 
-## 20. Clean-Up
+## 19. Clean-Up
 
 Delete all Azure resources created in this lab (Optional - lab will be purged automatically).
 
@@ -1875,12 +1902,12 @@ You've successfully built and deployed a production-ready multi-agent system! He
   - Monitored with Application Insights
   - Visualized with DevUI
 
-- **Bonus: A2A Integration** (Section 16):
+- **Bonus: A2A Integration** (Section 15):
   - Integrated external A2A-compatible agents
   - Explored cross-framework agent communication
   - Implemented distributed agent collaboration patterns
 
-- **Bonus: Spec-Driven Development** (Section 17):
+- **Bonus: Spec-Driven Development** (Section 16):
   - Used spec-kit to implement Entertainment Agent
   - Followed specification-driven workflow
   - Extended multi-agent system with new capability
