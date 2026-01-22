@@ -47,6 +47,9 @@ For more information, setup instructions for other dev clients, and to post comm
 
 Core AI Engineering Team
 
+## 🚀 Try Azure for Free!
+
+Ready to build, experiment, or scale your next project? Kick things off with an Azure Free Trial and get access to popular services, generous monthly credits, and the tools you need to ship fast. 👉 Start your free journey here: https://aka.ms/devrelft
 
 ## Contributing
 
